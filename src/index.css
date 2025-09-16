@@ -6,6 +6,12 @@
   font-weight: 400;
 
   color-scheme: light dark;
+  background: #107c41;
+  background: linear-gradient(
+    0deg,
+    rgba(16, 124, 65, 1) 0%,
+    rgba(1, 41, 33, 1) 32%
+  );
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,8 +21,8 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  /* display: flex;
+  place-items: center; */
   min-width: 320px;
   min-height: 100vh;
 }
