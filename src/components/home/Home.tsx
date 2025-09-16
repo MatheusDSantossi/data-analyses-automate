@@ -1,3 +1,5 @@
+import "./Home.css";
+
 const Home = () => {
   return (
     <div>
@@ -6,7 +8,9 @@ const Home = () => {
       </div>
       <main className="flex flex-col justify-center items-center h-screen">
         <header className="flex flex-col items-start mb-16">
-          <h1 className="font-medium text-2xl">Welcome to our Automate Data Analyse Wizard Tool</h1>
+          <h1 className="font-medium text-2xl">
+            Welcome to our <span className="highlight c3">Automate Data Analyse Wizard Tool</span>
+          </h1>
           <h4>Select the file to start the magic</h4>
           {/* Add some magic here (stars or something) */}
         </header>

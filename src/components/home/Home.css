@@ -1,0 +1,17 @@
+.highlight {
+  color: #fff;
+  text-shadow:
+    1px 1px 1px #000000,
+    1px -1px 1px #000000,
+    -1px 1px 1px #000000,
+    -1px -1px 1px #000000;
+}
+
+.highlight:hover {
+  color: #000000;
+  text-shadow: none;
+}
+
+.highlight.c3:hover {
+  background-color: #ffd6a5;
+}
