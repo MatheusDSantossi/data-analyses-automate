@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 telerik-license.txt
+.env
+.vscode
+
