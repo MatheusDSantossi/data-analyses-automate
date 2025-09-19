@@ -1,21 +1,43 @@
 import { useState } from "react";
 import "./Home.css";
 import { Input, type InputChangeEvent } from "@progress/kendo-react-inputs";
+import CustomButton from "../../ui/CustomButton";
+import { useNavigate } from "react-router-dom";
+import { useFile } from "../../context/FileContext";
+
 
 const Home = () => {
+  const navigate = useNavigate();
+  const { setFile, setParsedData } = useFile();
+
   // State
-  const [selectedFile, setSelectedFile] = useState<File>();
+  const [selectedFileName, setSelectedFileName] = useState<
+    string | undefined
+  >();
 
   // Function to handle the selected file and work with it
   const handleFileChange = (event: InputChangeEvent) => {
-    console.log("event.target.files: ", event.target);
+    const files = event.target.element?.files;
 
-    if (event.target.element?.files && event.target.element?.files.length > 0) {
-      setSelectedFile(event.target.element?.files[0]);
-      console.log(event.target.element?.files[0].name);
+    if (files && files.length > 0) {
+      const file = files[0];
+      setFile(file);
+      setSelectedFileName(file.name);
+      // parseFile(file).then(rows => setParsedData(rows))
+      console.log(files[0].name);
     } else {
       alert("You must select a file");
     }
+  };
+  
+
+  const goToDashboard = () => {
+    // ensure user selected a file before navigating
+    if (!selectedFileName) {
+      alert("Please select a file first.");
+      return;
+    }
+    navigate("/dashboard");
   };
 
   return (
@@ -43,6 +65,7 @@ const Home = () => {
             id="file_select"
             onChange={handleFileChange}
           />
+          <CustomButton onClick={goToDashboard} />
         </section>
       </main>
     </div>
