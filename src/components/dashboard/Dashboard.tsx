@@ -2,7 +2,9 @@ import { useNavigate } from "react-router-dom";
 import { useFile } from "../../context/FileContext";
 import { useEffect, useState } from "react";
 
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import BarChart from "./BarChart";
+
 
 const Dashboard = () => {
   // File Context
@@ -37,10 +39,12 @@ const Dashboard = () => {
           setParsedData(rows);
         } else {
           // xslx/xlsx... -> we use SheetJS
-          const workbook = XLSX.read(arrayBuffer, { type: "array" });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+          const workbook = new ExcelJS.Workbook();
+          workbook.xlsx.load(arrayBuffer);
+          const sheet = workbook.worksheets[0];
+          const rows = [];
+
+          sheet.eachRow((row) => rows.push(row.values));
 
           setParsedData(rows);
         }
@@ -57,11 +61,40 @@ const Dashboard = () => {
 
   if (!file) return null; // redurect handle above
 
-  return <div>{file?.name}</div>;
+  return (
+    <div className="p-6">
+      <h2 className="text-xl font-bold mb-4">Dashboard</h2>
+      <p>File: {file.name}</p>
+
+      {!loading && parsedData && (
+        <div>
+          <h3 className="mt-4">Preview (first 5 rows)</h3>
+          <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded">
+            {JSON.stringify(parsedData.slice(0, 5), null, 2)}
+          </pre>
+
+          {/* TODO: render Grid, charts, selectors, etc. */}
+          <BarChart seriesData={parsedData} />
+        </div>
+      )}
+    </div>
+  );
 };
 
 function csvToJson(csv: string) {
-  // const lines = csv.split()
+  const lines = csv.split(/\r?\n/).filter(Boolean);
+
+  if (!lines.length) return [];
+  const headers = lines[0].split(",").map((h) => h.trim());
+  const rows = lines.slice(1).map((line) => {
+    const values = line.split(",").map((v) => v.trim());
+    const obj: Record<string, any> = {};
+
+    headers.forEach((h, i) => (obj[h] = values[i] ?? null));
+    return obj;
+  });
+
+  return rows;
 }
 
 export default Dashboard;
