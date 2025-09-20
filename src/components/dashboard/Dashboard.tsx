@@ -3,8 +3,8 @@ import { useFile } from "../../context/FileContext";
 import { useEffect, useState } from "react";
 
 import ExcelJS from "exceljs";
-import BarChart from "./BarChart";
-
+import BarChart from "./charts/BarChart";
+import { aggregateBy } from "../../utils/aggregateBy";
 
 const Dashboard = () => {
   // File Context
@@ -14,6 +14,7 @@ const Dashboard = () => {
 
   // States
   const [loading, setLoading] = useState(false);
+  const [chartData, setChartData] = useState<any[] | undefined>(undefined);
 
   useEffect(() => {
     if (!file) {
@@ -59,22 +60,46 @@ const Dashboard = () => {
     parse();
   }, [file, parsedData, navigate, setParsedData]);
 
-  if (!file) return null; // redurect handle above
+  useEffect(() => {
+    if (!parsedData) return;
+
+    // Convert and aggregate
+    const aggregated = aggregateBy(parsedData, "Categoria", "Valor_Venda", {
+      topN: 10, // show only top 10 categories (helps readability)
+      sortDesc: true,
+    });
+
+    // console.log("")
+
+    setChartData(aggregated);
+  }, [parsedData]);
+
+  if (!file) return null; // redirect handle above
 
   return (
     <div className="p-6">
       <h2 className="text-xl font-bold mb-4">Dashboard</h2>
       <p>File: {file.name}</p>
 
-      {!loading && parsedData && (
+      {!loading && parsedData && chartData && (
         <div>
           <h3 className="mt-4">Preview (first 5 rows)</h3>
-          <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded">
+          <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded my-10">
+            {/* {JSON.stringify(chartData.slice(0, 5), null, 2)} */}
             {JSON.stringify(parsedData.slice(0, 5), null, 2)}
           </pre>
 
           {/* TODO: render Grid, charts, selectors, etc. */}
-          <BarChart seriesData={parsedData} />
+          <BarChart
+            // seriesData={parsedData}
+            seriesData={chartData}
+            chartType="column"
+            field="Valor_Venda"
+            categoryField="Categoria"
+            mainTitle="Sales by Category"
+            axisTitle="Categories"
+            axisValueTitle="Sales Value"
+          />
         </div>
       )}
     </div>

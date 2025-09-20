@@ -60,3 +60,10 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+/* path {
+  fill: var(--color-primary);
+  stroke-width: 1;
+  stroke-opacity: 1;
+  fill-opacity: 1;
+} */
