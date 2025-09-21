@@ -8,6 +8,7 @@ import {
   ChartValueAxis,
   ChartValueAxisItem,
   ChartLegend,
+  type LegendLabels,
 } from "@progress/kendo-react-charts";
 
 type SeriesItem = { name: string; data: number[] };
@@ -36,10 +37,9 @@ const LineChart = ({
     "#ff5722",
   ];
 
-  console.log("seriesData: ", seriesData);
-  console.log("categories: ", categories);
+  // console.log("seriesData: ", seriesData);
+  // console.log("categories: ", categories);
 
-  // console.log("seriesData name: ")
   return (
     <div style={{ height: "100%", width: 800 }}>
       <Chart
@@ -49,7 +49,10 @@ const LineChart = ({
         style={{ backgroundColor: "white", height: "100%", width: 800 }}
       >
         <ChartTitle text={mainTitle} font="bold 16px Arial" />
-        <ChartLegend position="right" />
+        <ChartLegend
+          position="right"
+          labels={{ color: "#111", font: "normal 14px Arial" }}
+        />
         <ChartCategoryAxis>
           <ChartCategoryAxisItem
             title={{ text: axisTitle, color: "#111", font: "bold 14px Arial" }}
