@@ -44,16 +44,16 @@ const BarChart = ({
     () => safeData.map((d) => (d?.[categoryField] ?? "N/A").toString()),
     [safeData, categoryField]
   );
-  console.log("safeData", safeData);
+  // console.log("safeData", safeData);
 
-  const chartMaterialV4Colors: string[] = [
-    "#3f51b5",
-    "#2196f3",
-    "#43a047",
-    "#ffc107",
-    "#ff5722",
-    "#e91e63",
-  ];
+  // const chartMaterialV4Colors: string[] = [
+  //   "#3f51b5",
+  //   "#2196f3",
+  //   "#43a047",
+  //   "#ffc107",
+  //   "#ff5722",
+  //   "#e91e63",
+  // ];
 
   // if (typeof safeData[0][field] !== "number")
 
@@ -61,7 +61,6 @@ const BarChart = ({
   return (
     <div style={{ height: "100%", width: 800 }}>
       <Chart
-        seriesColors={chartMaterialV4Colors}
         transitions={false}
         renderAs="canvas"
         style={{ backgroundColor: "white", height: "100%", width: 800 }}
