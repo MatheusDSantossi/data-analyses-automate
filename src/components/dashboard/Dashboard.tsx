@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 
 import ExcelJS from "exceljs";
 import BarChart from "./charts/BarChart";
-import { aggregateBy } from "../../utils/aggregateBy";
+import { aggregateBy, aggregateByTimeSeries } from "../../utils/aggregation";
+import LineChart from "./charts/LineChart";
 
 const Dashboard = () => {
   // File Context
@@ -15,6 +16,15 @@ const Dashboard = () => {
   // States
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any[] | undefined>(undefined);
+  const { categories, series } = aggregateByTimeSeries(parsedData, {
+    dateField: "Data_Pedido",
+    valueField: "Valor_Venda",
+    groupByField: "Categoria",
+    granularity: "month-year", // month-year is good for line charts
+    topN: 10,
+    fillMissing: true,
+    localeMonthLabels: "en-US", // or "pt-BR"
+  });
 
   useEffect(() => {
     if (!file) {
@@ -90,6 +100,8 @@ const Dashboard = () => {
           </pre>
 
           {/* TODO: render Grid, charts, selectors, etc. */}
+          {/* <div className="grid grid-cols-2 gap-4">
+            <div className="mr-5"> */}
           <BarChart
             // seriesData={parsedData}
             seriesData={chartData}
@@ -100,6 +112,17 @@ const Dashboard = () => {
             axisTitle="Categories"
             axisValueTitle="Sales Value"
           />
+          {/* </div>
+            <div className="ml-5"> */}
+          <LineChart
+            categories={categories}
+            seriesData={series}
+            mainTitle="Sales over time"
+            axisTitle="Year-Month"
+            valueAxisTitle="Sales"
+          />
+          {/* </div>
+          </div> */}
         </div>
       )}
     </div>
