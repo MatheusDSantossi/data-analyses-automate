@@ -4,6 +4,7 @@ import { Input, type InputChangeEvent } from "@progress/kendo-react-inputs";
 import CustomButton from "../../ui/CustomButton";
 import { useNavigate } from "react-router-dom";
 import { useFile } from "../../context/FileContext";
+import { Error } from '@progress/kendo-react-labels';
 
 
 const Home = () => {
@@ -43,7 +44,7 @@ const Home = () => {
   return (
     <div>
       <div className="top-0">
-        <img className="h-16" src="/src/assets/logo.png" alt="System Logo" />
+        <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
       </div>
       <main className="flex flex-col justify-center items-center h-screen">
         <header className="flex flex-col items-start mb-16">
@@ -65,6 +66,9 @@ const Home = () => {
             id="file_select"
             onChange={handleFileChange}
           />
+          {!selectedFileName && (
+            <Error id={"file_select"} className="text-red-500 font-medium italic">You must select a file</Error>
+          )}
           <CustomButton onClick={goToDashboard} />
         </section>
       </main>
