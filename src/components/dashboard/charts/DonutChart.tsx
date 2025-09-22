@@ -1,0 +1,102 @@
+import {
+  Chart,
+  ChartTitle,
+  ChartSeries,
+  ChartSeriesItem,
+  ChartCategoryAxis,
+  ChartCategoryAxisItem,
+  ChartValueAxis,
+  ChartValueAxisItem,
+  ChartLegend,
+  ChartSeriesLabels,
+  ChartTooltip,
+} from "@progress/kendo-react-charts";
+
+type DataPoint = { [key: string]: string | number };
+
+interface DonutChartProps {
+  seriesData: DataPoint[];
+  categoryField: string;
+  valueField: string;
+  mainTitle?: string;
+  axisTitle: string;
+  valueAxisTitle: string;
+}
+
+const DonutChart = ({
+  seriesData,
+  categoryField = "Categoria",
+  valueField = "Valor_Venda",
+  mainTitle = "Time Series",
+  axisTitle = "",
+  valueAxisTitle = "",
+}: DonutChartProps) => {
+  const chartMaterialV4Colors: string[] = [
+    "#3f51b5",
+    "#2196f3",
+    "#43a047",
+    "#e91e63",
+    "#ffc107",
+    "#ff5722",
+  ];
+
+  console.log("seriesData: ", seriesData);
+  // console.log("categories: ", categories);
+
+  // The label content prop expects a function that returns the text for each slice.
+  // The 'e' object contains details about the slice, like category, value, and percentage.
+  const labelContent = (e: any) => e.dataItem.Estado;
+  // const labelContent = (e: any) => e.value;
+  // const labelContent = (e: any) => `${e.category}: \n ${e.value}%`;
+
+  const valuesList = seriesData.map((item) => item.Valor_Venda);
+  const sum = valuesList.reduce((acc, currentValue) => Number(acc) + Number(currentValue), 0);
+
+  console.log("valuesList: ", valuesList);
+  console.log("sum: ", sum);
+
+  const renderTooltip = (context: any) => {
+    // TODO: I need to transform the value in percentage
+    const { dataItem, series, value } = context.point || context;
+    return (
+      <div>
+        {dataItem.Estado}: {(Number(sum) - value).toFixed(2)}%
+        {/* {dataItem.Estado} ({series.name}): {value}% */}
+      </div>
+    );
+  };
+
+  console.log("labelContent: ", labelContent);
+
+  return (
+    <div style={{ height: "100%", width: 800 }}>
+      <Chart
+        seriesColors={chartMaterialV4Colors}
+        transitions={false}
+        renderAs="canvas"
+        style={{ backgroundColor: "white", height: "100%", width: 800 }}
+      >
+        <ChartTooltip render={renderTooltip} />
+        <ChartTitle text={mainTitle} font="bold 16px Arial" color="#111" />
+        <ChartLegend position="right" visible={true} />
+
+        <ChartSeries>
+          <ChartSeriesItem
+            type="donut"
+            data={seriesData}
+            categoryField={categoryField}
+            field={valueField}
+          >
+            <ChartSeriesLabels
+              color="#fff"
+              background="none"
+              content={labelContent}
+            />
+          </ChartSeriesItem>
+        </ChartSeries>
+      </Chart>
+    </div>
+  );
+};
+
+export default DonutChart;

@@ -6,6 +6,7 @@ import ExcelJS from "exceljs";
 import BarChart from "./charts/BarChart";
 import { aggregateBy, aggregateByTimeSeries } from "../../utils/aggregation";
 import LineChart from "./charts/LineChart";
+import DonutChart from "./charts/DonutChart";
 
 const Dashboard = () => {
   // File Context
@@ -15,11 +16,13 @@ const Dashboard = () => {
 
   // States
   const [loading, setLoading] = useState(false);
-  const [chartData, setChartData] = useState<any[] | undefined>(undefined);
-  const { categories, series } = aggregateByTimeSeries(parsedData, {
+  const [barChartData, setBarChartData] = useState<any[] | undefined>(undefined);
+  const [lineChartData, setLineChartData] = useState<any[] | undefined>(undefined);
+  const [donutChartData, setDonutChartData] = useState<any[] | undefined>(undefined);
+  const { categories: categoriesLineChart, series: seriesBarChart } = aggregateByTimeSeries(parsedData, {
     dateField: "Data_Pedido",
     valueField: "Valor_Venda",
-    groupByField: "Categoria",
+    groupByField: "Segmento",
     granularity: "month-year", // month-year is good for line charts
     topN: 10,
     fillMissing: true,
@@ -74,24 +77,35 @@ const Dashboard = () => {
     if (!parsedData) return;
 
     // Convert and aggregate
-    const aggregated = aggregateBy(parsedData, "Categoria", "Valor_Venda", {
+    const aggregatedBarChart = aggregateBy(parsedData, "Categoria", "Valor_Venda", {
+      topN: 10, // show only top 10 categories (helps readability)
+      sortDesc: true,
+    });
+    const aggregatedLineChart = aggregateBy(parsedData, "Segmento", "Valor_Venda", {
+      topN: 10, // show only top 10 categories (helps readability)
+      sortDesc: true,
+    });
+    const aggregatedDonutChart = aggregateBy(parsedData, "Estado", "Valor_Venda", {
       topN: 10, // show only top 10 categories (helps readability)
       sortDesc: true,
     });
 
-    // console.log("")
+    console.log("aggregatedDonutChart: ", aggregatedDonutChart)
 
-    setChartData(aggregated);
+    setBarChartData(aggregatedBarChart);
+    setLineChartData(aggregatedLineChart);
+    setDonutChartData(aggregatedDonutChart);
   }, [parsedData]);
 
   if (!file) return null; // redirect handle above
 
   return (
     <div className="p-6">
+      <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
       <h2 className="text-xl font-bold mb-4">Dashboard</h2>
       <p>File: {file.name}</p>
 
-      {!loading && parsedData && chartData && (
+      {!loading && parsedData && barChartData && (
         <div>
           <h3 className="mt-4">Preview (first 5 rows)</h3>
           <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded my-10">
@@ -104,7 +118,7 @@ const Dashboard = () => {
             <div className="mr-5"> */}
           <BarChart
             // seriesData={parsedData}
-            seriesData={chartData}
+            seriesData={barChartData}
             chartType="column"
             field="Valor_Venda"
             categoryField="Categoria"
@@ -115,14 +129,22 @@ const Dashboard = () => {
           {/* </div>
             <div className="ml-5"> */}
           <LineChart
-            categories={categories}
-            seriesData={series}
+            categories={categoriesLineChart}
+            seriesData={seriesBarChart}
             mainTitle="Sales over time"
             axisTitle="Year-Month"
             valueAxisTitle="Sales"
           />
           {/* </div>
           </div> */}
+          <DonutChart
+            seriesData={donutChartData}
+            categoryField="Segmento"
+            valueField="Valor_Venda"
+            mainTitle="Sales by City"
+            axisTitle="Year-Month"
+            valueAxisTitle="Sales"
+          />
         </div>
       )}
     </div>
