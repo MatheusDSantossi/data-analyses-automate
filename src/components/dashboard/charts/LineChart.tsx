@@ -48,7 +48,7 @@ const LineChart = ({
         renderAs="canvas"
         style={{ backgroundColor: "white", height: "100%", width: 800 }}
       >
-        <ChartTitle text={mainTitle} font="bold 16px Arial" />
+        <ChartTitle text={mainTitle} font="bold 16px Arial" color="#111" />
         <ChartLegend
           position="right"
           labels={{ color: "#111", font: "normal 14px Arial" }}
