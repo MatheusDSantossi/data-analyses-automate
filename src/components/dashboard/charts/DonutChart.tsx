@@ -32,12 +32,19 @@ const DonutChart = ({
   valueAxisTitle = "",
 }: DonutChartProps) => {
   const chartMaterialV4Colors: string[] = [
-    "#3f51b5",
-    "#2196f3",
-    "#43a047",
-    "#e91e63",
-    "#ffc107",
-    "#ff5722",
+    "#3f51b5", // Indigo
+    "#2196f3", // Blue
+    "#43a047", // Green
+    "#e91e63", // Pink
+    "#ffc107", // Amber
+    "#ff5722", // Deep Orange
+
+    // New Additions
+    "#9c27b0", // Purple
+    "#009688", // Teal
+    "#f44336", // Red
+    "#795548", // Brown
+    "#673ab7", // Deep Purple
   ];
 
   console.log("seriesData: ", seriesData);
@@ -50,7 +57,10 @@ const DonutChart = ({
   // const labelContent = (e: any) => `${e.category}: \n ${e.value}%`;
 
   const valuesList = seriesData.map((item) => item.Valor_Venda);
-  const sum = valuesList.reduce((acc, currentValue) => Number(acc) + Number(currentValue), 0);
+  const sum = valuesList.reduce(
+    (acc, currentValue) => Number(acc) + Number(currentValue),
+    0
+  );
 
   console.log("valuesList: ", valuesList);
   console.log("sum: ", sum);
@@ -69,12 +79,12 @@ const DonutChart = ({
   console.log("labelContent: ", labelContent);
 
   return (
-    <div style={{ height: "100%", width: 800 }}>
+    <div style={{ height: "fit-content", width: 640 }}>
       <Chart
         seriesColors={chartMaterialV4Colors}
         transitions={false}
         renderAs="canvas"
-        style={{ backgroundColor: "white", height: "100%", width: 800 }}
+        style={{ backgroundColor: "white", height: "100%", width: 640 }}
       >
         <ChartTooltip render={renderTooltip} />
         <ChartTitle text={mainTitle} font="bold 16px Arial" color="#111" />

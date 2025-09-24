@@ -41,12 +41,12 @@ const LineChart = ({
   // console.log("categories: ", categories);
 
   return (
-    <div style={{ height: "100%", width: 800 }}>
+    <div style={{ height: "fit-content", width: 640 }}>
       <Chart
         seriesColors={chartMaterialV4Colors}
         transitions={false}
         renderAs="canvas"
-        style={{ backgroundColor: "white", height: "100%", width: 800 }}
+        style={{ backgroundColor: "white", height: "100%", width: 640 }}
       >
         <ChartTitle text={mainTitle} font="bold 16px Arial" color="#111" />
         <ChartLegend

@@ -2,7 +2,6 @@ import {
   Chart,
   ChartCategoryAxis,
   ChartCategoryAxisItem,
-  ChartLegend,
   ChartNoDataOverlay,
   ChartSeries,
   ChartSeriesItem,
@@ -59,11 +58,11 @@ const BarChart = ({
 
   // const customAggregate = (values, series, dataItems, category) => values.reduce((n, acc) => acc + n, 0);
   return (
-    <div style={{ height: "100%", width: 800 }}>
+    <div style={{ height: "fit-content", width: 400 }}>
       <Chart
         transitions={false}
         renderAs="canvas"
-        style={{ backgroundColor: "white", height: "100%", width: 800 }}
+        style={{ backgroundColor: "white", height: "fit-content", width: 640 }}
       >
         <ChartTitle color="#111" font="bold 16px Arial" text={mainTitle} />
         {/* <ChartLegend position="top" orientation="horizontal" /> */}ç
