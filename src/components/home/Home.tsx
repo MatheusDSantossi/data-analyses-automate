@@ -69,7 +69,7 @@ const Home = () => {
           {!selectedFileName && (
             <Error id={"file_select"} className="text-red-500 font-medium italic">You must select a file</Error>
           )}
-          <CustomButton onClick={goToDashboard} />
+          <CustomButton onClick={goToDashboard} isDisabled={!selectedFileName} />
         </section>
       </main>
     </div>

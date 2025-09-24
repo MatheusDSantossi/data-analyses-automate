@@ -7,6 +7,8 @@ import BarChart from "./charts/BarChart";
 import { aggregateBy, aggregateByTimeSeries } from "../../utils/aggregation";
 import LineChart from "./charts/LineChart";
 import DonutChart from "./charts/DonutChart";
+import AreaChart from "./charts/AreaChart";
+import PieChart from "./charts/PieChart";
 
 const Dashboard = () => {
   // File Context
@@ -16,18 +18,36 @@ const Dashboard = () => {
 
   // States
   const [loading, setLoading] = useState(false);
-  const [barChartData, setBarChartData] = useState<any[] | undefined>(undefined);
-  const [lineChartData, setLineChartData] = useState<any[] | undefined>(undefined);
-  const [donutChartData, setDonutChartData] = useState<any[] | undefined>(undefined);
-  const { categories: categoriesLineChart, series: seriesBarChart } = aggregateByTimeSeries(parsedData, {
-    dateField: "Data_Pedido",
-    valueField: "Valor_Venda",
-    groupByField: "Segmento",
-    granularity: "month-year", // month-year is good for line charts
-    topN: 10,
-    fillMissing: true,
-    localeMonthLabels: "en-US", // or "pt-BR"
-  });
+  const [barChartData, setBarChartData] = useState<any[] | undefined>(
+    undefined
+  );
+  const [pieChartData, setPieChartData] = useState<any[] | undefined>(
+    undefined
+  );
+  const [donutChartData, setDonutChartData] = useState<any[] | undefined>(
+    undefined
+  );
+  const { categories: categoriesLineChart, series: seriesLineChart } =
+    aggregateByTimeSeries(parsedData, {
+      dateField: "Data_Pedido",
+      valueField: "Valor_Venda",
+      groupByField: "Segmento",
+      granularity: "month-year", // month-year is good for line charts
+      topN: 10,
+      fillMissing: true,
+      localeMonthLabels: "en-US", // or "pt-BR"
+    });
+
+  const { categories: categoriesAreaChart, series: seriesAreaChart } =
+    aggregateByTimeSeries(parsedData, {
+      dateField: "Data_Pedido",
+      valueField: "Valor_Venda",
+      groupByField: "Categoria",
+      granularity: "year", // month-year is good for line charts
+      topN: 10,
+      fillMissing: true,
+      localeMonthLabels: "en-US", // or "pt-BR"
+    });
 
   useEffect(() => {
     if (!file) {
@@ -77,23 +97,38 @@ const Dashboard = () => {
     if (!parsedData) return;
 
     // Convert and aggregate
-    const aggregatedBarChart = aggregateBy(parsedData, "Categoria", "Valor_Venda", {
-      topN: 10, // show only top 10 categories (helps readability)
-      sortDesc: true,
-    });
-    const aggregatedLineChart = aggregateBy(parsedData, "Segmento", "Valor_Venda", {
-      topN: 10, // show only top 10 categories (helps readability)
-      sortDesc: true,
-    });
-    const aggregatedDonutChart = aggregateBy(parsedData, "Estado", "Valor_Venda", {
-      topN: 10, // show only top 10 categories (helps readability)
-      sortDesc: true,
-    });
+    const aggregatedBarChart = aggregateBy(
+      parsedData,
+      "Categoria",
+      "Valor_Venda",
+      {
+        topN: 10, // show only top 10 categories (helps readability)
+        sortDesc: true,
+      }
+    );
+    const aggregatedLineChart = aggregateBy(
+      parsedData,
+      "Segmento",
+      "Valor_Venda",
+      {
+        topN: 10, // show only top 10 categories (helps readability)
+        sortDesc: true,
+      }
+    );
+    const aggregatedDonutChart = aggregateBy(
+      parsedData,
+      "Estado",
+      "Valor_Venda",
+      {
+        topN: 10, // show only top 10 categories (helps readability)
+        sortDesc: true,
+      }
+    );
 
-    console.log("aggregatedDonutChart: ", aggregatedDonutChart)
+    console.log("aggregatedDonutChart: ", aggregatedDonutChart);
 
     setBarChartData(aggregatedBarChart);
-    setLineChartData(aggregatedLineChart);
+    setPieChartData(aggregatedLineChart);
     setDonutChartData(aggregatedDonutChart);
   }, [parsedData]);
 
@@ -113,38 +148,68 @@ const Dashboard = () => {
             {JSON.stringify(parsedData.slice(0, 5), null, 2)}
           </pre>
 
-          {/* TODO: render Grid, charts, selectors, etc. */}
-          {/* <div className="grid grid-cols-2 gap-4">
-            <div className="mr-5"> */}
-          <BarChart
-            // seriesData={parsedData}
-            seriesData={barChartData}
-            chartType="column"
-            field="Valor_Venda"
-            categoryField="Categoria"
-            mainTitle="Sales by Category"
-            axisTitle="Categories"
-            axisValueTitle="Sales Value"
-          />
-          {/* </div>
-            <div className="ml-5"> */}
-          <LineChart
-            categories={categoriesLineChart}
-            seriesData={seriesBarChart}
-            mainTitle="Sales over time"
-            axisTitle="Year-Month"
-            valueAxisTitle="Sales"
-          />
-          {/* </div>
-          </div> */}
-          <DonutChart
-            seriesData={donutChartData}
-            categoryField="Segmento"
-            valueField="Valor_Venda"
-            mainTitle="Sales by City"
-            axisTitle="Year-Month"
-            valueAxisTitle="Sales"
-          />
+          {/* Grid: 1 column on small, 2 column on md+, horizontal gap 15px, vertical 30px */}
+          <div className="grid grid-cols-2 gap-x-3.5 gap-y-7.5">
+            {/* Chart card 1 */}
+            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+              <BarChart
+                // seriesData={parsedData}
+                seriesData={barChartData}
+                chartType="column"
+                field="Valor_Venda"
+                categoryField="Categoria"
+                mainTitle="Sales by Category"
+                axisTitle="Categories"
+                axisValueTitle="Sales Value"
+              />
+            </div>
+
+            {/* Chart card 2 */}
+            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+              <LineChart
+                categories={categoriesLineChart}
+                seriesData={seriesLineChart}
+                mainTitle="Sales over time"
+                axisTitle="Year-Month"
+                valueAxisTitle="Sales"
+              />
+            </div>
+
+            {/* Chart card 3 */}
+            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+              <DonutChart
+                seriesData={donutChartData}
+                categoryField="Segmento"
+                valueField="Valor_Venda"
+                mainTitle="Sales by City"
+                axisTitle="Year-Month"
+                valueAxisTitle="Sales"
+              />
+            </div>
+
+            {/* Chart card 4 */}
+            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+              <AreaChart
+                categories={categoriesAreaChart}
+                seriesData={seriesAreaChart}
+                mainTitle="Sales over time"
+                axisTitle="Years"
+                valueAxisTitle="Sales"
+              />
+            </div>
+
+            {/* Chart card 5 */}
+            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+              <PieChart
+                seriesData={pieChartData}
+                categoryField="SubCategoria"
+                valueField="Valor_Venda"
+                mainTitle="Sales by SubCategory"
+                axisTitle="Year-Month"
+                valueAxisTitle="Sales"
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
