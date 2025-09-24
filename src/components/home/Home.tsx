@@ -15,6 +15,7 @@ const Home = () => {
   const [selectedFileName, setSelectedFileName] = useState<
     string | undefined
   >();
+  // const allowedFileTypes = ["application/xlsx", "application/xls", "application/csv"]
 
   // Function to handle the selected file and work with it
   const handleFileChange = (event: InputChangeEvent) => {
@@ -22,10 +23,13 @@ const Home = () => {
 
     if (files && files.length > 0) {
       const file = files[0];
-      setFile(file);
-      setSelectedFileName(file.name);
-      // parseFile(file).then(rows => setParsedData(rows))
-      console.log(files[0].name);
+
+      if (allowedFileTypes.includes(file.type)) {
+        setFile(file);
+        setSelectedFileName(file.name);
+        // parseFile(file).then(rows => setParsedData(rows))
+        console.log(files[0].name);
+      }
     } else {
       alert("You must select a file");
     }
@@ -65,6 +69,7 @@ const Home = () => {
             type="file"
             id="file_select"
             onChange={handleFileChange}
+            {/* accept="".csv .xlsx .xls  . */}
           />
           {!selectedFileName && (
             <Error id={"file_select"} className="text-red-500 font-medium italic">You must select a file</Error>
