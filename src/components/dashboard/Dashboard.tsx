@@ -9,6 +9,9 @@ import LineChart from "./charts/LineChart";
 import DonutChart from "./charts/DonutChart";
 import AreaChart from "./charts/AreaChart";
 import PieChart from "./charts/PieChart";
+import CardDashboard from "./charts/Card";
+import { FaPencilAlt } from "react-icons/fa";
+import { getResponseForGivenPrompt } from "../../utils/GeminiFunctions";
 
 const Dashboard = () => {
   // File Context
@@ -134,19 +137,49 @@ const Dashboard = () => {
 
   if (!file) return null; // redirect handle above
 
+  console.log(
+    "getResponseForGivenPrompt -> ",
+    getResponseForGivenPrompt("Hello World")
+  );
+
   return (
     <div className="p-6">
       <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
       <h2 className="text-xl font-bold mb-4">Dashboard</h2>
       <p>File: {file.name}</p>
-
-      {!loading && parsedData && barChartData && (
+      <FaPencilAlt size={18} />
+      {!loading && parsedData && barChartData ? (
         <div>
           <h3 className="mt-4">Preview (first 5 rows)</h3>
           <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded my-10">
             {/* {JSON.stringify(chartData.slice(0, 5), null, 2)} */}
             {JSON.stringify(parsedData.slice(0, 5), null, 2)}
           </pre>
+
+          <div className="flex justify-center">
+            <CardDashboard
+              title={"Sales"}
+              content={
+                <div>
+                  <p>
+                    <strong>Total Sales</strong>: ${barChartData[0].Valor_Venda}
+                  </p>
+                </div>
+              }
+              // content={`Total Sales: $${barChartData[0].Valor_Venda}`}
+            />
+            <CardDashboard
+              title={"Sales"}
+              content={
+                <div>
+                  <p>
+                    <strong>Total Sales</strong>: ${barChartData[0].Valor_Venda}
+                  </p>
+                </div>
+              }
+              // content={`Total Sales: $${barChartData[0].Valor_Venda}`}
+            />
+          </div>
 
           {/* Grid: 1 column on small, 2 column on md+, horizontal gap 15px, vertical 30px */}
           <div className="grid grid-cols-2 gap-x-3.5 gap-y-7.5">
@@ -211,6 +244,8 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      ) : (
+        <p>Loading and parsing file...</p>
       )}
     </div>
   );

@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./Home.css";
 import { Input, type InputChangeEvent } from "@progress/kendo-react-inputs";
 import CustomButton from "../../ui/CustomButton";
 import { useNavigate } from "react-router-dom";
 import { useFile } from "../../context/FileContext";
-import { Error } from '@progress/kendo-react-labels';
-
+import { Error } from "@progress/kendo-react-labels";
+import { Reveal } from "@progress/kendo-react-animation";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -15,6 +15,7 @@ const Home = () => {
   const [selectedFileName, setSelectedFileName] = useState<
     string | undefined
   >();
+  const [key, setKey] = useState(0); // State to force re-rendering of the Reveal component
 
   // Function to handle the selected file and work with it
   const handleFileChange = (event: InputChangeEvent) => {
@@ -30,7 +31,6 @@ const Home = () => {
       alert("You must select a file");
     }
   };
-  
 
   const goToDashboard = () => {
     // ensure user selected a file before navigating
@@ -41,37 +41,62 @@ const Home = () => {
     navigate("/dashboard");
   };
 
+  useEffect(() => {
+    // Force re-rendering of the Reveal component to trigger the animation
+    setKey((prevKey) => prevKey + 1);
+  }, []);
+
   return (
     <div>
-      <div className="top-0">
-        <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
-      </div>
-      <main className="flex flex-col justify-center items-center h-screen">
-        <header className="flex flex-col items-start mb-16">
-          <h1 className="font-medium text-2xl">
-            Welcome to our{" "}
-            <span className="highlight c3">
-              Automate Data Analyse Wizard Tool
-            </span>
-          </h1>
-          <h4>Select the file to start the magic</h4>
-          {/* Add some magic here (stars or something) */}
-        </header>
-        <section>
-          {/* <label htmlFor="data_file" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Select the file!!</label> */}
+      <Reveal>
+        <div className="mt-10" key={key}>
+          <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
+        </div>
+        <main className="flex flex-col justify-center items-center h-screen">
+          <header className="flex flex-col items-start mb-16">
+            <h1 className="font-medium text-2xl">
+              Welcome to our{" "}
+              <span className="highlight c3">
+                Automate Data Analyse Wizard Tool
+              </span>
+            </h1>
+            <h4>Select the file to start the magic</h4>
+            {/* Add some magic here (stars or something) */}
+          </header>
+          <section className="flex flex-col gap-3">
+            {/* <label htmlFor="data_file" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Select the file!!</label> */}
 
-          <Input
-            className="block w-full mb-5 p-2 text-sm text-primary border border-gray-300 rounded-lg cursor-pointer bg-gray-700 hover:bg-white-200 dark:text-secondary-dark focus:outline-none dark:bg-white dark:border-gray-600 dark:placeholder-gray-400"
-            type="file"
-            id="file_select"
-            onChange={handleFileChange}
-          />
-          {!selectedFileName && (
-            <Error id={"file_select"} className="text-red-500 font-medium italic">You must select a file</Error>
-          )}
-          <CustomButton onClick={goToDashboard} isDisabled={!selectedFileName} />
-        </section>
-      </main>
+            <Input
+              className="block w-full text-sm
+              file:mr-4 file:py-2 file:px-3
+              file:border-0
+              file:text-sm file:font-semibold
+              file:bg-violet-50 file:text-secondary-dark
+              hover:file:bg-tertiary
+              file:cursor-pointer
+              cursor-pointer
+              border border-tertiary rounded-lg
+              focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent
+              file:transition file:duration-300 file:ease-in-out"
+              type="file"
+              id="file_select"
+              onChange={handleFileChange}
+            />
+            {!selectedFileName && (
+              <Error
+                id={"file_select"}
+                className="text-red-500 font-medium italic"
+              >
+                You must select a file
+              </Error>
+            )}
+            <CustomButton
+              onClick={goToDashboard}
+              isDisabled={!selectedFileName}
+            />
+          </section>
+        </main>
+      </Reveal>
     </div>
   );
 };
