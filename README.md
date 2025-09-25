@@ -43,6 +43,18 @@ Upload CSV / XLSX files, perform quick analyses, and build custom charts. UI pow
 - **Labels** (`@progress/kendo-react-labels`) - Form validation:
   - `Error` - Validation error display
 
+- **Layout** (`@progress/kendo-react-layout`) - Data display and structure:
+  - `Card` - Container for displaying content
+  - `CardTitle` - Title section for the card
+  - `CardBody` - Main content area of the card
+  - `CardActions` - Action buttons or elements in the card
+
+- **Chart Wizard** (`@progress/kendo-react-chart-wizard`) - Edit charts with:
+  - `ChartWizard` - Wizard component for chart editing and configuration
+
+- **Animation** (`@progress/kendo-react-animation`) - Components animation with:
+  - `Reveal` - Animation component for revealing content with effects
+
 ## Getting started (dev)
 
 ```bash
@@ -76,7 +88,6 @@ npm run build
 ## Libraries & credits
 
 * KendoReact Free — 50+ free UI components. ([Telerik.com][2])
-* Recharts (charts) or Chart.js (choose one) for charting
 * `xlsx` for client-side spreadsheet parsing
 
 ## Contributing
