@@ -55,6 +55,17 @@ Upload CSV / XLSX files, perform quick analyses, and build custom charts. UI pow
 - **Animation** (`@progress/kendo-react-animation`) - Components animation with:
   - `Reveal` - Animation component for revealing content with effects
 
+**NEW
+
+- **Tooltip** (`@progress/kendo-react-tooltip`) - Components tooltip with:
+  - `Tooltip` - Tooltip component for showing some texts
+
+- **Progress Bar** (`@progress/kendo-react-progressbars`) - Components progress bar with:
+  - `ProgressBar` - Progress Bar component responsible for some loading screens
+
+- **Skeleton** (`'@progress/kendo-react-indicators`) - Components skeleton for:
+  - `Skeleton` - All charts will load with a skeleton before showing the data
+
 ## Getting started (dev)
 
 ```bash
