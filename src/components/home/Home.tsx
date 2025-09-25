@@ -15,7 +15,13 @@ const Home = () => {
   const [selectedFileName, setSelectedFileName] = useState<
     string | undefined
   >();
-  const allowedFileTypes = ["application/xlsx", "application/xls", "application/csv"];
+  const [key, setKey] = useState(0); // Key to force re-rendering of Reveal component
+  // const allowedFileTypes = [
+  //   "application/xlsx",
+  //   "application/xls",
+  //   "text/csv",
+  //   "sheet"
+  // ];
 
   // Function to handle the selected file and work with it
   const handleFileChange = (event: InputChangeEvent) => {
@@ -23,13 +29,14 @@ const Home = () => {
 
     if (files && files.length > 0) {
       const file = files[0];
+      console.log(file.type);
 
-      if (allowedFileTypes.includes(file.type)) {
-        setFile(file);
-        setSelectedFileName(file.name);
-        // parseFile(file).then(rows => setParsedData(rows))
-        console.log(files[0].name);
-      }
+      // if (allowedFileTypes.includes(file.type)) {
+      setFile(file);
+      setSelectedFileName(file.name);
+      // parseFile(file).then(rows => setParsedData(rows))
+      console.log(files[0].name);
+      // }
     } else {
       alert("You must select a file");
     }
@@ -93,10 +100,12 @@ const Home = () => {
                 You must select a file
               </Error>
             )}
-            <CustomButton
-              onClick={goToDashboard}
-              isDisabled={!selectedFileName}
-            />
+            
+              <CustomButton
+                onClick={goToDashboard}
+                isDisabled={!selectedFileName}
+              />
+            
           </section>
         </main>
       </Reveal>
