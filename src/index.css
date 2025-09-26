@@ -67,3 +67,30 @@ body {
   stroke-opacity: 1;
   fill-opacity: 1;
 } */
+
+.k-button {
+  display: inline-block;
+  position: relative;
+  padding: 1px;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  color: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.k-input {
+  display: block !important;
+  border-radius: 0.5rem !important;
+  border-width: 1px !important;
+  width: 100% !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  cursor: pointer !important;
+
+  :hover {
+    background-color: var(--color-tertiary) !important;
+  }
+}
