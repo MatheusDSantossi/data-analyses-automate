@@ -14,6 +14,7 @@ import { FaPencilAlt } from "react-icons/fa";
 import { getResponseForGivenPrompt } from "../../utils/GeminiFunctions";
 import ProgressBarComp from "../../ui/ProgressBarComp";
 import { Skeleton } from "@progress/kendo-react-indicators";
+import '@progress/kendo-theme-default/dist/all.css';
 
 const Dashboard = () => {
   // File Context
@@ -152,6 +153,8 @@ const Dashboard = () => {
 
   // number of chart slots for skeleton
   const chartSlots = [1, 2, 3, 4, 5];
+
+  console.log("Gemini answered: ", getResponseForGivenPrompt("Hello, Gemini!"))
 
   return (
     <div className="p-6">
