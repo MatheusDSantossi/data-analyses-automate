@@ -4,11 +4,9 @@ const api_key = import.meta.env.VITE_GEMINI_API_KEY;
 
 const genAI = new GoogleGenerativeAI(api_key as string);
 
-console.log("API Key:", api_key);
-
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-export const getResponseForGivenPrompt = async (prompt) => {
+export const getResponseForGivenPrompt = async (prompt: string) => {
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -19,4 +17,3 @@ export const getResponseForGivenPrompt = async (prompt) => {
     throw error;
   }
 };
-
