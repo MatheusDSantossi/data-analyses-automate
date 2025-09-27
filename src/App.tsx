@@ -6,14 +6,14 @@ import Wizard from "./components/dashboard/chartTools/Wizard";
 import { useFile } from "./context/FileContext";
 
 function App() {
-  const { parsedData } = useFile();
+  const { parsedData, file } = useFile();
   
   return (
     <>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/edit" element={<Wizard data={parsedData} />} />
+        <Route path="/edit" element={<Wizard data={parsedData} file={file} />} />
       </Routes>
     </>
   );
