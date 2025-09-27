@@ -88,7 +88,12 @@ const DonutChart = ({
       >
         <ChartTooltip render={renderTooltip} />
         <ChartTitle text={mainTitle} font="bold 16px Arial" color="#111" />
-        <ChartLegend position="right" visible={true} />
+        <ChartLegend position="right" visible={true} labels={{
+    font: "12px Arial",
+    color: "#111"
+  }}
+  margin={10}
+  padding={5} />
 
         <ChartSeries>
           <ChartSeriesItem

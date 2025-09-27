@@ -4,7 +4,6 @@ import {
   ChartSeries,
   ChartSeriesItem,
   ChartLegend,
-  ChartSeriesLabels,
   ChartTooltip,
 } from "@progress/kendo-react-charts";
 
@@ -15,8 +14,6 @@ interface PieChartProps {
   categoryField: string;
   valueField: string;
   mainTitle?: string;
-  axisTitle: string;
-  valueAxisTitle: string;
 }
 
 const PieChart = ({
@@ -24,8 +21,6 @@ const PieChart = ({
   categoryField = "Categoria",
   valueField = "Valor_Venda",
   mainTitle = "Time Series",
-  axisTitle = "",
-  valueAxisTitle = "",
 }: PieChartProps) => {
   const chartMaterialV4Colors: string[] = [
     "#3f51b5", // Indigo
@@ -64,9 +59,10 @@ const PieChart = ({
   const renderTooltip = (context: any) => {
     // TODO: I need to transform the value in percentage
     const { dataItem, series, value } = context.point || context;
+    console.log("dataItem pie: ", dataItem)
     return (
       <div>
-        {dataItem.Estado}: {(Number(sum) - value).toFixed(2)}%
+        {dataItem.Segmento}: {(Number(sum) - value).toFixed(2)}%
         {/* {dataItem.Estado} ({series.name}): {value}% */}
       </div>
     );

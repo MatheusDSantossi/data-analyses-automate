@@ -14,7 +14,9 @@ import { FaPencilAlt } from "react-icons/fa";
 import { getResponseForGivenPrompt } from "../../utils/GeminiFunctions";
 import ProgressBarComp from "../../ui/ProgressBarComp";
 import { Skeleton } from "@progress/kendo-react-indicators";
-import '@progress/kendo-theme-default/dist/all.css';
+import "@progress/kendo-theme-default/dist/all.css";
+import { Reveal } from "@progress/kendo-react-animation";
+import { Tooltip } from "@progress/kendo-react-tooltip";
 
 const Dashboard = () => {
   // File Context
@@ -36,6 +38,12 @@ const Dashboard = () => {
   const [donutChartData, setDonutChartData] = useState<any[] | undefined>(
     undefined
   );
+  const [key, setKey] = useState(0); // Key to force re-rendering of Reveal component
+
+  useEffect(() => {
+    // Force re-rendering of the Reveal component to trigger the animation
+    setKey((prevKey) => prevKey + 1);
+  }, []);
 
   // Consider "ready" when arrays exist and have length > 0
   const isReady = useMemo(() => {
@@ -154,185 +162,201 @@ const Dashboard = () => {
   // number of chart slots for skeleton
   const chartSlots = [1, 2, 3, 4, 5];
 
-  console.log("Gemini answered: ", getResponseForGivenPrompt("Hello, Gemini!"))
+  console.log("Gemini answered: ", getResponseForGivenPrompt("Hello, Gemini!"));
 
   return (
-    <div className="p-6">
-      <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
-      <h2 className="text-xl font-bold mb-4">Dashboard</h2>
-      <p>File: {file.name ?? "No file selected"}</p>
+    <div className="w-full p-6">
+      <Reveal className="w-full">
+        <div className="" key={key}>
+          <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
+          <h2 className="text-2xl font-bold mb-8">Dashboard</h2>
+          <p>File: {file.name ?? "No file selected"}</p>
 
-      {/* Progress bar (show even while ready optionally) */}
-      <div className="my-4">
+          {/* Progress bar (show even while ready optionally) */}
+          {/* <div className="my-4">
         <ProgressBarComp value={loadingProgress ?? 0} />
-      </div>
+      </div> */}
 
-      {isReady ? (
-        // NORMAL CONTENT
-        <div>
-          <FaPencilAlt
-            className="cursor-pointer hover:text-tertiary"
-            size={18}
-            onClick={() => {
-              navigate("/edit");
-            }}
-          />
-          <h3 className="mt-4">Preview (first 5 rows)</h3>
-          <Skeleton shape="text" style={{ width: "100%" }} />
-          <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded my-10">
-            {/* {JSON.stringify(chartData.slice(0, 5), null, 2)} */}
-            {JSON.stringify(parsedData.slice(0, 5), null, 2)}
-          </pre>
+          {isReady ? (
+            // NORMAL CONTENT
+            <div>
+              <Tooltip anchorElement="target" position="top" parentTitle={true}>
+                <FaPencilAlt
+                  title="Create Chart"
+                  className="cursor-pointer hover:text-tertiary"
+                  size={18}
+                  onClick={() => {
+                    navigate("/edit");
+                  }}
+                />
+              </Tooltip>
+              <h3 className="mt-4">Preview (first 5 rows)</h3>
+              <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded my-10">
+                {/* {JSON.stringify(chartData.slice(0, 5), null, 2)} */}
+                {JSON.stringify(parsedData.slice(0, 5), null, 2)}
+              </pre>
 
-          <div className="flex justify-center">
-            <CardDashboard
-              title={"Sales"}
-              content={
-                <div>
-                  <p>
-                    <strong>Total Sales</strong>: ${barChartData[0].Valor_Venda}
-                  </p>
+              <div className="flex justify-center">
+                <CardDashboard
+                  title={"Sales"}
+                  content={
+                    <div>
+                      <p>
+                        <strong>Total Sales</strong>: $
+                        {barChartData[0].Valor_Venda}
+                      </p>
+                    </div>
+                  }
+                  // content={`Total Sales: $${barChartData[0].Valor_Venda}`}
+                />
+                <CardDashboard
+                  title={"Sales"}
+                  content={
+                    <div>
+                      <p>
+                        <strong>Total Sales</strong>: $
+                        {barChartData[0].Valor_Venda}
+                      </p>
+                    </div>
+                  }
+                  // content={`Total Sales: $${barChartData[0].Valor_Venda}`}
+                />
+              </div>
+
+              {/* Grid: 1 column on small, 2 column on md+, horizontal gap 15px, vertical 30px */}
+              <div className="grid grid-cols-2 gap-x-3.5 gap-y-7.5">
+                {/* Chart card 1 */}
+                <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+                  <BarChart
+                    // seriesData={parsedData}
+                    seriesData={barChartData}
+                    chartType="column"
+                    field="Valor_Venda"
+                    categoryField="Categoria"
+                    mainTitle="Sales by Category"
+                    axisTitle="Categories"
+                    axisValueTitle="Sales Value"
+                  />
                 </div>
-              }
-              // content={`Total Sales: $${barChartData[0].Valor_Venda}`}
-            />
-            <CardDashboard
-              title={"Sales"}
-              content={
-                <div>
-                  <p>
-                    <strong>Total Sales</strong>: ${barChartData[0].Valor_Venda}
-                  </p>
+
+                {/* Chart card 2 */}
+                <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+                  <LineChart
+                    categories={categoriesLineChart}
+                    seriesData={seriesLineChart}
+                    mainTitle="Sales over time"
+                    axisTitle="Year-Month"
+                    valueAxisTitle="Sales"
+                  />
                 </div>
-              }
-              // content={`Total Sales: $${barChartData[0].Valor_Venda}`}
-            />
-          </div>
 
-          {/* Grid: 1 column on small, 2 column on md+, horizontal gap 15px, vertical 30px */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3.5 gap-y-7.5">
-            {/* Chart card 1 */}
-            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
-              <BarChart
-                // seriesData={parsedData}
-                seriesData={barChartData}
-                chartType="column"
-                field="Valor_Venda"
-                categoryField="Categoria"
-                mainTitle="Sales by Category"
-                axisTitle="Categories"
-                axisValueTitle="Sales Value"
-              />
-            </div>
+                {/* Chart card 3 */}
+                <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+                  <DonutChart
+                    seriesData={donutChartData}
+                    categoryField="Segmento"
+                    valueField="Valor_Venda"
+                    mainTitle="Sales by City"
+                    axisTitle="Year-Month"
+                    valueAxisTitle="Sales"
+                  />
+                </div>
 
-            {/* Chart card 2 */}
-            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
-              <LineChart
-                categories={categoriesLineChart}
-                seriesData={seriesLineChart}
-                mainTitle="Sales over time"
-                axisTitle="Year-Month"
-                valueAxisTitle="Sales"
-              />
-            </div>
+                {/* Chart card 4 */}
+                <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+                  <AreaChart
+                    categories={categoriesAreaChart}
+                    seriesData={seriesAreaChart}
+                    mainTitle="Sales over time"
+                    axisTitle="Years"
+                    valueAxisTitle="Sales"
+                  />
+                </div>
 
-            {/* Chart card 3 */}
-            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
-              <DonutChart
-                seriesData={donutChartData}
-                categoryField="Segmento"
-                valueField="Valor_Venda"
-                mainTitle="Sales by City"
-                axisTitle="Year-Month"
-                valueAxisTitle="Sales"
-              />
-            </div>
-
-            {/* Chart card 4 */}
-            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
-              <AreaChart
-                categories={categoriesAreaChart}
-                seriesData={seriesAreaChart}
-                mainTitle="Sales over time"
-                axisTitle="Years"
-                valueAxisTitle="Sales"
-              />
-            </div>
-
-            {/* Chart card 5 */}
-            <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
-              <PieChart
-                seriesData={pieChartData}
-                categoryField="SubCategoria"
-                valueField="Valor_Venda"
-                mainTitle="Sales by SubCategory"
-                axisTitle="Year-Month"
-                valueAxisTitle="Sales"
-              />
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* --------------------- SKELETON PLACEHOLDERS --------------------- */
-        <div>
-          <h3 className="mt-4 mb-2">Preview</h3>
-          {/* text skeleton */}
-          <Skeleton shape="text" style={{ width: "60%", height: 20 }} />
-
-          {/* preview box skeleton */}
-          <div className="my-6">
-            <Skeleton style={{ width: "100%", height: 160, borderRadius: 8 }} />
-          </div>
-
-          {/* small stat cards skeleton */}
-          <div className="flex gap-4 justify-center mb-6">
-            <div style={{ width: 220 }}>
-              <Skeleton shape="text" style={{ width: "50%" }} />
-              <Skeleton
-                style={{
-                  width: "100%",
-                  height: 72,
-                  borderRadius: 8,
-                  marginTop: 8,
-                }}
-              />
-            </div>
-            <div style={{ width: 220 }}>
-              <Skeleton shape="text" style={{ width: "50%" }} />
-              <Skeleton
-                style={{
-                  width: "100%",
-                  height: 72,
-                  borderRadius: 8,
-                  marginTop: 8,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* grid of chart skeletons (same layout as real grid) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[30px]">
-            {chartSlots.map((i) => (
-              <div key={i} className="bg-white rounded-lg p-4 min-h-[300px]">
-                {/* card heading skeleton */}
-                <Skeleton shape="text" style={{ width: "40%", height: 18 }} />
-                <div className="mt-4">
-                  {/* large rectangle where the chart would be */}
-                  <Skeleton
-                    style={{ width: "100%", height: 240, borderRadius: 8 }}
+                {/* Chart card 5 */}
+                <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+                  <PieChart
+                    seriesData={pieChartData}
+                    categoryField="SubCategoria"
+                    valueField="Valor_Venda"
+                    mainTitle="Sales by SubCategory"
+                    axisTitle="Year-Month"
+                    valueAxisTitle="Sales"
                   />
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            /* --------------------- SKELETON PLACEHOLDERS --------------------- */
+            <div>
+              <h3 className="mt-4 mb-2">Preview</h3>
+              {/* text skeleton */}
+              <Skeleton shape="text" style={{ width: "60%", height: 20 }} />
 
-          {/* UX hint */}
-          <p className="mt-4 text-sm text-gray-600">
-            Loading and parsing file...{" "}
-            {loadingProgress ? `${loadingProgress}%` : ""}
-          </p>
+              {/* preview box skeleton */}
+              <div className="my-6">
+                <Skeleton
+                  style={{ width: "100%", height: 160, borderRadius: 8 }}
+                />
+              </div>
+
+              {/* small stat cards skeleton */}
+              <div className="flex gap-4 justify-center mb-6">
+                <div style={{ width: 220 }}>
+                  <Skeleton shape="text" style={{ width: "50%" }} />
+                  <Skeleton
+                    style={{
+                      width: "100%",
+                      height: 72,
+                      borderRadius: 8,
+                      marginTop: 8,
+                    }}
+                  />
+                </div>
+                <div style={{ width: 220 }}>
+                  <Skeleton shape="text" style={{ width: "50%" }} />
+                  <Skeleton
+                    style={{
+                      width: "100%",
+                      height: 72,
+                      borderRadius: 8,
+                      marginTop: 8,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* grid of chart skeletons (same layout as real grid) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[30px]">
+                {chartSlots.map((i) => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-lg p-4 min-h-[300px]"
+                  >
+                    {/* card heading skeleton */}
+                    <Skeleton
+                      shape="text"
+                      style={{ width: "40%", height: 18 }}
+                    />
+                    <div className="mt-4">
+                      {/* large rectangle where the chart would be */}
+                      <Skeleton
+                        style={{ width: "100%", height: 240, borderRadius: 8 }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* UX hint */}
+              <p className="mt-4 text-sm text-gray-600">
+                Loading and parsing file...{" "}
+                {loadingProgress ? `${loadingProgress}%` : ""}
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </Reveal>
     </div>
   );
 };
