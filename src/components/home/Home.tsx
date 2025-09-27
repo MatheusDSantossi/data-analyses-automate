@@ -58,7 +58,7 @@ const Home = () => {
 
   return (
     <div>
-      <Reveal>
+      <Reveal className="w-full">
         <div className="mt-10" key={key}>
           <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
         </div>
