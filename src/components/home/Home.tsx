@@ -70,7 +70,7 @@ const Home = () => {
                 Automate Data Analyse Wizard Tool
               </span>
             </h1>
-            <h4>Select the file to start the magic</h4>
+            <h4 className="text-md">Select the file to start the magic</h4>
             {/* Add some magic here (stars or something) */}
           </header>
           <section className="flex flex-col gap-3">
