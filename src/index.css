@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+@theme {
+  /* Colors */
+  --color-primary: #107c41;
+  --color-secondary: #185c23;
+  --color-secondary-dark: #012921;
+  --color-tertiary: #33c481;
+  --color-quartiary: #21a366;
+  --color-black-100: #100d25;
+  --color-black-200: #090325;
+  --color-white-100: #f3f3f3;
+  --color-white-200: #e0ffff;
+  --color-input: #121212;
+
+  /* Font Size */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 4rem;
+  --text-7xl: 5rem;
+
+  /* Screen breakpoints */
+  --breakpoint-xs: "450px";
+  --breakpoint-sm: "640px";
+  --breakpoint-md: "768px";
+  --breakpoint-lg: "1024px";
+  --breakpoint-xl: "1280px";
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -25,4 +59,38 @@ body {
   place-items: center; */
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* path {
+  fill: var(--color-primary);
+  stroke-width: 1;
+  stroke-opacity: 1;
+  fill-opacity: 1;
+} */
+
+.k-button {
+  display: inline-block;
+  position: relative;
+  padding: 1px;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  color: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.k-input {
+  display: block !important;
+  border-radius: 0.5rem !important;
+  border-width: 1px !important;
+  width: 100% !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  cursor: pointer !important;
+
+  :hover {
+    background-color: var(--color-tertiary) !important;
+  }
 }

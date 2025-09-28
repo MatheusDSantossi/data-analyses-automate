@@ -1,6 +1,6 @@
 # Sheet Wizard
 
-*Shape spreadsheet data into charts and insights*  
+_Shape spreadsheet data into charts and insights_
 
 ![Build Without Boundaries](https://img.shields.io/badge/KendoReact-Challenge-blue) ![Vite](https://img.shields.io/badge/Vite-✅-pink) ![Tailwind](https://img.shields.io/badge/Tailwind-✅-06b6d4)
 
@@ -27,15 +27,44 @@ Upload CSV / XLSX files, perform quick analyses, and build custom charts. UI pow
 
 ## KendoReact components used (examples — 10+)
 
-- Grid (`@progress/kendo-react-grid`) — table visualization. :contentReference[oaicite:15]{index=15}
-- Input / NumericTextBox / RadioButton / Checkbox (`@progress/kendo-react-inputs`). :contentReference[oaicite:16]{index=16}
-- Button, ButtonGroup, ChipList, Toolbar (`@progress/kendo-react-buttons`). :contentReference[oaicite:17]{index=17}
-- DropDownList / ComboBox (`@progress/kendo-react-dropdowns`). :contentReference[oaicite:18]{index=18}
-- DatePicker / DateInput (`@progress/kendo-react-dateinputs`). :contentReference[oaicite:19]{index=19}
-- ListBox (`@progress/kendo-react-listbox`) — choose chart axes. :contentReference[oaicite:20]{index=20}
-- Pager (data tools) — grid paging. :contentReference[oaicite:21]{index=21}
+- **Charts** (`@progress/kendo-react-charts`) - Data visualization with:
+  - `PieChart` - Proportional data representation
+  - `BarChart` - Categorical comparisons
+  - `AreaChart` - Trend analysis over time
+  - `DonutChart` - Proportional data with center metrics
+  - `LineChart` - Continuous data trends
 
-> Note: Kendo **Charts** and **Upload** are premium components; I used Recharts for chart rendering and a simple client-side file input + `xlsx` parsing to avoid the premium Upload dependency. :contentReference[oaicite:22]{index=22}
+- **Inputs** (`@progress/kendo-react-inputs`) - Form controls:
+  - `Input` - Text and data entry fields
+
+- **Buttons** (`@progress/kendo-react-buttons`) - User interactions:
+  - `Button` - Primary action triggers
+
+- **Labels** (`@progress/kendo-react-labels`) - Form validation:
+  - `Error` - Validation error display
+
+- **Layout** (`@progress/kendo-react-layout`) - Data display and structure:
+  - `Card` - Container for displaying content
+  - `CardTitle` - Title section for the card
+  - `CardBody` - Main content area of the card
+  - `CardActions` - Action buttons or elements in the card
+
+- **Chart Wizard** (`@progress/kendo-react-chart-wizard`) - Edit charts with:
+  - `ChartWizard` - Wizard component for chart editing and configuration
+
+- **Animation** (`@progress/kendo-react-animation`) - Components animation with:
+  - `Reveal` - Animation component for revealing content with effects
+
+**NEW
+
+- **Tooltip** (`@progress/kendo-react-tooltip`) - Components tooltip with:
+  - `Tooltip` - Tooltip component for showing some texts
+
+- **Progress Bar** (`@progress/kendo-react-progressbars`) - Components progress bar with:
+  - `ProgressBar` - Progress Bar component responsible for some loading screens
+
+- **Skeleton** (`'@progress/kendo-react-indicators`) - Components skeleton for:
+  - `Skeleton` - All charts will load with a skeleton before showing the data
 
 ## Getting started (dev)
 
@@ -70,7 +99,6 @@ npm run build
 ## Libraries & credits
 
 * KendoReact Free — 50+ free UI components. ([Telerik.com][2])
-* Recharts (charts) or Chart.js (choose one) for charting
 * `xlsx` for client-side spreadsheet parsing
 
 ## Contributing
