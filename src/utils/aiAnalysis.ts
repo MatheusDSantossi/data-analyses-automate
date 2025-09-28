@@ -2,10 +2,13 @@
 import { getResponseForGivenPrompt } from "./GeminiFunctions";
 import { aggregateRowsToWizardData } from "./transformForWizard";
 import { aggregateByTimeSeries } from "./aggregation"; // your earlier helper
-import { toNumber } from "./toNumber"; 
+import { toNumber } from "./toNumber";
 
 // Build a small per-column summary from sample rows
-export function buildColumnSummary(rows: Record<string, any>[], sampleLimit = 100) {
+export function buildColumnSummary(
+  rows: Record<string, any>[],
+  sampleLimit = 100
+) {
   if (!Array.isArray(rows) || rows.length === 0) return { columns: [] };
 
   const sample = rows.slice(0, Math.min(sampleLimit, rows.length));
@@ -29,13 +32,22 @@ export function buildColumnSummary(rows: Record<string, any>[], sampleLimit = 10
       }
     }
 
-    const inferredType = numericCount / Math.max(1, sample.length) > 0.6 ? "numeric" : "categorical_or_string";
+    const inferredType =
+      numericCount / Math.max(1, sample.length) > 0.6
+        ? "numeric"
+        : "categorical_or_string";
     columns.push({
       name: k,
       type: inferredType,
       sample: Array.from(seen).slice(0, 8),
       uniqueSampleCount: seen.size,
-      numericSummary: inferredType === "numeric" ? { min: numericMin === Infinity ? null : numericMin, max: numericMax === -Infinity ? null : numericMax } : null
+      numericSummary:
+        inferredType === "numeric"
+          ? {
+              min: numericMin === Infinity ? null : numericMin,
+              max: numericMax === -Infinity ? null : numericMax,
+            }
+          : null,
     });
   }
 
@@ -61,8 +73,22 @@ You are given a compact summary of a dataset (column names with type hints and s
       "topN": <int|null>,
       "explain": <string>                  // short explanation (1-2 sentences)
     }
+  ],
+  "recommendedCards": [
+    {
+      "cardType": <"metric"|"topCategory"|"count"|"avg"|"minMax">,
+      "field": <string|null>,            // column name used for metric or category; null if not applicable (e.g. count)
+      "aggregation": <"sum"|"avg"|"count"|null>,
+      "label": <string>,                 // short display label for the card title
+      "format": <"currency"|"number"|"percentage"|"text">,
+      "topN": <int|null>,                // optional, for topCategory
+      "explain": <string>
+    }
   ]
+
 }
+
+Now analyze the supplied column metadata and suggest up to 4 charts and up to 4 small dashboard cards that would be useful for a quick glance (e.g., total sales, average order value, number of orders, top categories). Do NOT compute exact numbers — only return the card specs (field, aggregation, label, format, optional topN) so the frontend will compute the values on the real data. Prefer 'sum' for monetary-like columns.
 
 Here is the column summary (JSON):
 ${JSON.stringify(columnSummary)}
@@ -83,7 +109,8 @@ Return the JSON only.
 export function extractJson(text: string) {
   const first = text.indexOf("{");
   const last = text.lastIndexOf("}");
-  if (first === -1 || last === -1) throw new Error("No JSON found in AI response");
+  if (first === -1 || last === -1)
+    throw new Error("No JSON found in AI response");
   const jsonText = text.slice(first, last + 1);
   return JSON.parse(jsonText);
 }
@@ -91,16 +118,185 @@ export function extractJson(text: string) {
 /**
  * Main analyze function: returns parsed recommendations or throws.
  */
-export async function analyzeDataWithAI(rows: Record<string, any>[], options?: { sampleLimit?: number }) {
+export async function analyzeDataWithAI(
+  rows: Record<string, any>[],
+  options?: { sampleLimit?: number }
+) {
   const sampleLimit = options?.sampleLimit ?? 200;
-  const sampleRows = Array.isArray(rows) ? rows.slice(0, Math.min(sampleLimit, rows.length)) : [];
+  const sampleRows = Array.isArray(rows)
+    ? rows.slice(0, Math.min(sampleLimit, rows.length))
+    : [];
   if (sampleRows.length === 0) throw new Error("No rows to analyze");
 
   const columnSummary = buildColumnSummary(sampleRows, sampleLimit);
   const prompt = buildAIPrompt(columnSummary, sampleRows.length);
 
-  // call your existing wrapper which returns text
   const raw = await getResponseForGivenPrompt(prompt); // returns string
-  const parsed = extractJson(raw);
-  return parsed; // { columns, recommendedCharts }
+  const parsed = extractJson(raw); // your robust extractor
+  if (!parsed) throw new Error("AI returned no JSON");
+
+  // parsed.recommendedCharts (existing)
+  const recCharts = parsed.recommendedCharts ?? [];
+  const recCards = parsed.recommendedCards ?? [];
+
+  // Compute local card values (do not trust AI to compute numbers)
+  const cardPayloads = computeCardValues(rows, recCards);
+
+  return {
+    columns: parsed.columns,
+    recommendedCharts: recCharts,
+    recommendedCards: recCards,
+    cardPayloads,
+  };
+}
+
+export function computeCardValues(
+  rows: Record<string, any>[],
+  cardSpecs: any[]
+) {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+
+  const results = cardSpecs.map((spec: any, idx: number) => {
+    const { cardType, field, aggregation, label, format, topN } = spec || {};
+    const id = `card-${idx}-${cardType}-${field ?? "all"}`;
+
+    try {
+      if (cardType === "metric") {
+        // metric: sum/avg/count of a numeric field
+        if (!field) throw new Error("metric requires field");
+        const values = rows.map((r) => toNumber(r[field]));
+        const sum = values.reduce((s, v) => s + v, 0);
+        const avg = values.length ? sum / values.length : 0;
+        const val =
+          aggregation === "avg"
+            ? avg
+            : aggregation === "count"
+              ? values.length
+              : sum;
+        return {
+          id,
+          cardType,
+          label: label ?? `${aggregation ?? "sum"} ${field}`,
+          field,
+          value: val,
+          format,
+          explain: spec.explain,
+        };
+      }
+
+      if (cardType === "count") {
+        // just count rows or count distinct field values if field present
+        if (!field)
+          return {
+            id,
+            cardType,
+            label: label ?? "Count",
+            field: null,
+            value: rows.length,
+            format: format ?? "number",
+            explain: spec.explain,
+          };
+        const set = new Set(rows.map((r) => String(r[field] ?? "")));
+        return {
+          id,
+          cardType,
+          label: label ?? `Count of ${field}`,
+          field,
+          value: set.size,
+          format: format ?? "number",
+          explain: spec.explain,
+        };
+      }
+
+      if (cardType === "topCategory") {
+        if (!field) throw new Error("topCategory requires a field");
+        // aggregate sums of numeric columns across the group - choose best numeric automatically
+        // find the numeric-like column to display value (prefer Valor_Venda-like names)
+        const numericField =
+          Object.keys(rows[0]).find((k) =>
+            /valor|value|total|price|amount|sales|cost/i.test(k)
+          ) ??
+          Object.keys(rows[0]).find(
+            (k) => typeof toNumber(rows[0][k]) === "number"
+          );
+        // group sums
+        const map = new Map<string, number>();
+        for (const r of rows) {
+          const key = String(r[field] ?? "Unknown");
+          const n = numericField ? toNumber(r[numericField]) : 1; // if no numeric, count
+          map.set(key, (map.get(key) ?? 0) + n);
+        }
+        const arr = Array.from(map.entries()).map(([k, v]) => ({
+          key: k,
+          value: v,
+        }));
+        arr.sort((a, b) => b.value - a.value);
+        const top = topN && topN > 0 ? arr.slice(0, topN) : arr.slice(0, 3);
+        return {
+          id,
+          cardType,
+          label: label ?? `Top ${field}`,
+          field,
+          value: top,
+          numericField,
+          format: format ?? "number",
+          explain: spec.explain,
+        };
+      }
+
+      if (cardType === "avg") {
+        if (!field) throw new Error("avg requires field");
+        const values = rows.map((r) => toNumber(r[field]));
+        const avg = values.reduce((s, v) => s + v, 0) / (values.length || 1);
+        return {
+          id,
+          cardType,
+          label: label ?? `Avg ${field}`,
+          field,
+          value: avg,
+          format: format ?? "number",
+          explain: spec.explain,
+        };
+      }
+
+      if (cardType === "minMax") {
+        if (!field) throw new Error("minMax requires field");
+        const values = rows.map((r) => toNumber(r[field]));
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        return {
+          id,
+          cardType,
+          label: label ?? field,
+          field,
+          value: { min, max },
+          format: format ?? "number",
+          explain: spec.explain,
+        };
+      }
+
+      // fallback: return null entry
+      return {
+        id,
+        cardType,
+        label: label ?? "Unknown",
+        field,
+        value: null,
+        format,
+        explain: spec.explain,
+      };
+    } catch (err) {
+      return {
+        id,
+        cardType,
+        label: label ?? "Error",
+        field,
+        value: null,
+        format,
+        explain: String(err),
+      };
+    }
+  });
+
+  return results;
 }

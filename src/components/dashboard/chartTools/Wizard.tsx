@@ -78,7 +78,7 @@ const Wizard = ({ data, file }: { data: Record<string, any>[]; file: any }) => {
   }, [rows, aiSuggestion]);
 
   return (
-    <div>
+    <div className="mt-10">
       <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
       <h2 className="text-2xl font-bold mb-8">Wizard</h2>
       <p>File: {file?.name ?? "No file selected"}</p>
@@ -91,8 +91,8 @@ const Wizard = ({ data, file }: { data: Record<string, any>[]; file: any }) => {
             <strong>AI suggestion:</strong> Metric ={" "}
             <em>{aiSuggestion.metric ?? "none"}</em>, aggregation ={" "}
             <em>{aiSuggestion.aggregation}</em>
-            <div className="text-sm text-gray-600">{aiSuggestion.reason}</div>
-            <div className="mt-2">
+            <div className="text-sm text-white">{aiSuggestion.reason}</div>
+            {/* <div className="mt-2">
               <button
                 className="mr-2 btn"
                 onClick={() => {
@@ -114,7 +114,7 @@ const Wizard = ({ data, file }: { data: Record<string, any>[]; file: any }) => {
               >
                 Use raw sample
               </button>
-            </div>
+            </div> */}
           </div>
         ) : (
           <div className="text-sm text-gray-500">

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useFile } from "../../context/FileContext";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ExcelJS from "exceljs";
 import BarChart from "./charts/BarChart";
@@ -19,6 +19,16 @@ import { Reveal } from "@progress/kendo-react-animation";
 import { Tooltip } from "@progress/kendo-react-tooltip";
 import { aggregateRowsToWizardData } from "../../utils/transformForWizard";
 import { analyzeDataWithAI } from "../../utils/aiAnalysis";
+import { FaUpload, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
+
+type UploadedChart = {
+  id: string;
+  name: string;
+  type: "pdf" | "image" | "svg" | "other";
+  file: File;
+  url: string; // object URL (URL.createObjectURL)
+  uploadedAt: number;
+};
 
 type ChartKind = "bar" | "line" | "pie" | "donut" | "area";
 
@@ -42,9 +52,12 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   // States
+  const [uploadedCharts, setUploadedCharts] = useState<UploadedChart[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [generatedCharts, setGeneratedCharts] = useState<
     GeneratedChart[] | null
   >(null);
+  const [aiCards, setAiCards] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState<any | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
@@ -70,11 +83,18 @@ const Dashboard = () => {
   );
 
   const [key, setKey] = useState(0); // Key to force re-rendering of Reveal component
-
   useEffect(() => {
     // Force re-rendering of the Reveal component to trigger the animation
     setKey((prevKey) => prevKey + 1);
   }, []);
+
+  const fmtCurrency = (v: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(v);
+
+  const fmtNumber = (v: number) => new Intl.NumberFormat().format(v);
 
   // Consider "ready" when arrays exist and have length > 0
   const isReady = useMemo(() => {
@@ -82,28 +102,6 @@ const Dashboard = () => {
     const hasBar = Array.isArray(barChartData) && barChartData.length > 0;
     return !loading && hasParsed && hasBar;
   }, [loading, parsedData, barChartData]);
-
-  // const { categories: categoriesLineChart, series: seriesLineChart } =
-  //   aggregateByTimeSeries(parsedData, {
-  //     dateField: "Data_Pedido",
-  //     valueField: "Valor_Venda",
-  //     groupByField: "Segmento",
-  //     granularity: "month-year", // month-year is good for line charts
-  //     topN: 10,
-  //     fillMissing: true,
-  //     localeMonthLabels: "en-US", // or "pt-BR"
-  //   });
-
-  // const { categories: categoriesAreaChart, series: seriesAreaChart } =
-  //   aggregateByTimeSeries(parsedData, {
-  //     dateField: "Data_Pedido",
-  //     valueField: "Valor_Venda",
-  //     groupByField: "Categoria",
-  //     granularity: "year", // month-year is good for line charts
-  //     topN: 10,
-  //     fillMissing: true,
-  //     localeMonthLabels: "en-US", // or "pt-BR"
-  //   });
 
   useEffect(() => {
     if (!file) {
@@ -163,6 +161,10 @@ const Dashboard = () => {
         console.log("recs: ", recs);
 
         setAiRecommendations(recs);
+
+        if (recs.cardPayloads) {
+          setAiCards(recs.cardPayloads);
+        }
 
         const charts: GeneratedChart[] = (recs.recommendedCharts || []).map(
           (rec: any, idx: number) => {
@@ -354,6 +356,66 @@ const Dashboard = () => {
     }
   };
 
+  // helpers
+  const makeId = (prefix = "up") =>
+    `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+
+  const handleOpenFilePicker = () => {
+    console.log("open file picker clicked", fileInputRef.current);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fl = e.target.files;
+    if (!fl || fl.length === 0) return;
+    // support multiple if you want: loop
+    const file = fl[0];
+    addUploadedFile(file);
+    // reset value so same file can be re-selected
+    e.currentTarget.value = "";
+  };
+
+  const addUploadedFile = (file: File) => {
+    const name = file.name;
+    const ext = name.split(".").pop()?.toLowerCase() ?? "";
+    const url = URL.createObjectURL(file);
+    let type: UploadedChart["type"] = "other";
+    if (ext === "pdf") type = "pdf";
+    else if (ext === "svg") type = "svg";
+    else if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext))
+      type = "image";
+
+    const obj: UploadedChart = {
+      id: makeId("uploaded"),
+      name,
+      type,
+      file,
+      url,
+      uploadedAt: Date.now(),
+    };
+
+    setUploadedCharts((prev) => [obj, ...prev]);
+  };
+
+  const removeUploadedChart = useCallback((id: string) => {
+    setUploadedCharts((prev) => {
+      const item = prev.find((p) => p.id === id);
+      if (item) URL.revokeObjectURL(item.url);
+      return prev.filter((p) => p.id !== id);
+    });
+  }, []);
+
+  useEffect(() => {
+    // cleanup on unmount
+    return () => {
+      uploadedCharts.forEach((u) => {
+        try {
+          URL.revokeObjectURL(u.url);
+        } catch {}
+      });
+    };
+  }, [uploadedCharts]);
+
   // helper to convert wizard row [{field,value},...] into object { field1: value1, field2: value2 }
   function rowToObject(wizardRow: { field: string; value: any }[]) {
     return wizardRow.reduce<Record<string, any>>((acc, fv) => {
@@ -364,11 +426,78 @@ const Dashboard = () => {
 
   if (!file) return null; // redirect handle above
 
-  // number of chart slots for skeleton
-  const chartSlots = [1, 2, 3, 4, 5];
+  // rendering helper for uploaded chart card
+  const UploadedChartCard = ({ u }: { u: UploadedChart }) => {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-3 max-h-[420px] flex flex-col">
+        <div className="flex items-start justify-between">
+          <h4 className="text-sm font-medium truncate max-w-[70%]">{u.name}</h4>
+          <div className="flex gap-2 items-center">
+            <a
+              href={u.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open in new tab"
+              className="text-gray-500 hover:text-gray-900"
+            >
+              <FaExternalLinkAlt />
+            </a>
+            <button
+              onClick={() => removeUploadedChart(u.id)}
+              title="Remove"
+              className="text-red-500 hover:text-red-700"
+            >
+              <FaTrash />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-3 flex-1">
+          {u.type === "pdf" ? (
+            // simple PDF embed (works in modern browsers)
+            <div className="w-full max-h-[220px]">
+              <object
+                data={u.url}
+                type="application/pdf"
+                width="100%"
+                height="100%"
+                aria-label={u.name}
+              >
+                <div className="p-4 text-sm text-gray-600">
+                  PDF preview not available.{" "}
+                  <a
+                    href={u.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline"
+                  >
+                    Open PDF
+                  </a>
+                </div>
+              </object>
+            </div>
+          ) : (
+            // images & svg: show as image using object URL (safe)
+            <img
+              src={u.url}
+              alt={u.name}
+              className="h-[330px] w-full object-contain rounded"
+            />
+          )}
+        </div>
+
+        <div className="mt-2 text-xs text-gray-500">
+          {new Intl.DateTimeFormat("en-US", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }).format(u.uploadedAt)}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="w-full p-6">
+    <div className="w-full p-6 mt-10">
       <Reveal className="w-full">
         <div className="" key={key}>
           <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
@@ -376,23 +505,110 @@ const Dashboard = () => {
           <p>File: {file.name ?? "No file selected"}</p>
 
           <div>
-            <Tooltip anchorElement="target" position="top" parentTitle={true}>
-              <FaPencilAlt
-                title="Create Chart"
-                className="cursor-pointer hover:text-tertiary"
-                size={18}
-                onClick={() => {
-                  navigate("/edit");
-                }}
-              />
-            </Tooltip>
+            <div className="flex items-center">
+              <Tooltip anchorElement="target" position="top" parentTitle={true}>
+                <FaPencilAlt
+                  title="Create Chart"
+                  className="cursor-pointer hover:text-tertiary mb-3"
+                  size={18}
+                  onClick={() => {
+                    navigate("/edit");
+                  }}
+                />
+              </Tooltip>
+              {/* Upload control: label-for-input approach (recommended) */}
+              <div className="mb-4 flex items-center gap-3">
+                <input
+                  id="upload-chart-input"
+                  type="file"
+                  accept=".pdf,.svg,.png,.jpg,.jpeg,.webp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                <label
+                  htmlFor="upload-chart-input"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-dark text-white rounded cursor-pointer select-none"
+                  role="button"
+                >
+                  <FaUpload />
+                  Add exported chart
+                </label>
+
+                <div className="text-sm text-gray-500">
+                  Supported: PDF, PNG, JPG, SVG
+                </div>
+              </div>
+            </div>
             <h3 className="mt-4">Preview (first 5 rows)</h3>
             <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded my-10">
               {/* {JSON.stringify(chartData.slice(0, 5), null, 2)} */}
-              {isReady ? JSON.stringify(parsedData.slice(0, 5), null, 2) : "No Data"}
+              {JSON.stringify(parsedData.slice(0, 5), null, 2)}
             </pre>
 
             <div className="grid grid-cols-2 md:grid-cols-2 gap-x-[15px] gap-y-[30px]">
+              {aiCards?.map((c) => (
+                <div key={c.id} className="bg-white rounded-lg shadow-sm p-3">
+                  <h4 className="text-sm font-medium">{c.label}</h4>
+                  <div className="mt-3">
+                    {c.cardType === "metric" && (
+                      <div className="text-2xl font-bold text-black">
+                        {c.format === "currency"
+                          ? fmtCurrency(c.value)
+                          : fmtNumber(c.value)}
+                      </div>
+                    )}
+
+                    {c.cardType === "count" && (
+                      <div className="text-2xl font-bold text-black">
+                        {fmtNumber(c.value)}
+                      </div>
+                    )}
+
+                    {c.cardType === "topCategory" && (
+                      <div>
+                        {c.value.map((t: any) => (
+                          <div
+                            key={t.key}
+                            className="flex flex-col text-2xl font-bold text-black"
+                          >
+                            <span>{t.key}</span>
+                            <span>{fmtCurrency(t.value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {c.cardType === "minMax" && (
+                      <div>
+                        <div>Min: {fmtNumber(c.value.min)}</div>
+                        <div>Max: {fmtNumber(c.value.max)}</div>
+                      </div>
+                    )}
+
+                    {c.cardType === "avg" && (
+                      <div>
+                        <div className="text-2xl font-bold text-black">
+                          {" "}
+                          {fmtNumber(c.value)}
+                        </div>
+                      </div>
+                    )}
+
+                    {c.explain && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        {c.explain}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* show uploaded charts */}
+              {uploadedCharts.map((u) => (
+                <UploadedChartCard key={u.id} u={u} />
+              ))}
+
               {generatedCharts?.length ? (
                 generatedCharts.map((chart) => (
                   <ChartRenderer key={chart.id} chart={chart} />

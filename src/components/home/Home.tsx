@@ -63,7 +63,7 @@ const Home = () => {
           <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
         </div>
         <main className="flex flex-col justify-center items-center h-screen">
-          <header className="flex flex-col items-start mb-16">
+          <header className="flex flex-col items-start mb-26">
             <h1 className="font-medium text-2xl">
               Welcome to our{" "}
               <span className="highlight c3">
@@ -97,7 +97,7 @@ const Home = () => {
                 id={"file_select"}
                 className="text-red-500 font-medium italic"
               >
-                You must select a file
+                You need to select a file
               </Error>
             )}
             
