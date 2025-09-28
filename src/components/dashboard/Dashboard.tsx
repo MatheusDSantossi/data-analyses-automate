@@ -540,11 +540,10 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-            <h3 className="mt-4">Preview (first 5 rows)</h3>
+            {/* <h3 className="mt-4">Preview (first 5 rows)</h3>
             <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded my-10">
-              {/* {JSON.stringify(chartData.slice(0, 5), null, 2)} */}
               {JSON.stringify(parsedData.slice(0, 5), null, 2)}
-            </pre>
+            </pre> */}
 
             <div className="grid grid-cols-2 md:grid-cols-2 gap-x-[15px] gap-y-[30px]">
               {aiCards?.map((c) => (
