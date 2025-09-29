@@ -528,7 +528,7 @@ const Dashboard = () => {
 
                 <label
                   htmlFor="upload-chart-input"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-dark text-white rounded cursor-pointer select-none"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-dark text-white rounded cursor-pointer select-none hover:text-tertiary"
                   role="button"
                 >
                   <FaUpload />
@@ -547,7 +547,7 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-2 gap-x-[15px] gap-y-[30px]">
               {aiCards?.map((c) => (
-                <div key={c.id} className="bg-white rounded-lg shadow-sm p-3">
+                <div key={c.id} className="flex  flex-col justify-center bg-white rounded-lg shadow-sm p-3">
                   <h4 className="text-sm font-medium text-black">{c.label}</h4>
                   <div className="mt-3">
                     {c.cardType === "metric" && (
@@ -565,7 +565,7 @@ const Dashboard = () => {
                     )}
 
                     {c.cardType === "topCategory" && (
-                      <div>
+                      <div className="flex justify-center gap-4">
                         {c.value.map((t: any) => (
                           <div
                             key={t.key}
