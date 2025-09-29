@@ -66,11 +66,11 @@ const DonutChart = ({
   console.log("sum: ", sum);
 
   const renderTooltip = (context: any) => {
-    // TODO: I need to transform the value in percentage
+    // TODO: I need to check the value to see if the percentage is correct and get an item automatically
     const { dataItem, series, value } = context.point || context;
     return (
       <div>
-        {dataItem.Estado}: {(Number(sum) - value).toFixed(2)}%
+        {dataItem.Estado}: {((Number(sum) / value) * 100).toFixed(2)}%
         {/* {dataItem.Estado} ({series.name}): {value}% */}
       </div>
     );
