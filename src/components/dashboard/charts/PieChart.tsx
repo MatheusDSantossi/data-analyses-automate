@@ -6,6 +6,7 @@ import {
   ChartLegend,
   ChartTooltip,
 } from "@progress/kendo-react-charts";
+import type { ReactNode } from "react";
 
 type DataPoint = { [key: string]: string | number };
 
@@ -59,10 +60,11 @@ const PieChart = ({
   const renderTooltip = (context: any) => {
     // TODO: I need to transform the value in percentage
     const { dataItem, series, value } = context.point || context;
-    console.log("dataItem pie: ", dataItem)
+    console.log("dataItem pie: ", dataItem);
     return (
       <div>
-        {dataItem.Segmento}: {(Number(sum) - value).toFixed(2)}%
+        {Object.values(dataItem)[0] as ReactNode}:{" "}
+        {((value / Number(sum)) * 100).toFixed(2)}%
         {/* {dataItem.Estado} ({series.name}): {value}% */}
       </div>
     );

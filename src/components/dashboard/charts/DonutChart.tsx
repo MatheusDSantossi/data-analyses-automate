@@ -11,6 +11,7 @@ import {
   ChartSeriesLabels,
   ChartTooltip,
 } from "@progress/kendo-react-charts";
+import type { ReactNode } from "react";
 
 type DataPoint = { [key: string]: string | number };
 
@@ -68,9 +69,11 @@ const DonutChart = ({
   const renderTooltip = (context: any) => {
     // TODO: I need to check the value to see if the percentage is correct and get an item automatically
     const { dataItem, series, value } = context.point || context;
+    console.log("dataItem: ", dataItem);
     return (
       <div>
-        {dataItem.Estado}: {((Number(sum) / value) * 100).toFixed(2)}%
+        {Object.values(dataItem)[0] as ReactNode}:{" "}
+        {((value / Number(sum)) * 100).toFixed(2)}%
         {/* {dataItem.Estado} ({series.name}): {value}% */}
       </div>
     );
@@ -88,12 +91,16 @@ const DonutChart = ({
       >
         <ChartTooltip render={renderTooltip} />
         <ChartTitle text={mainTitle} font="bold 16px Arial" color="#111" />
-        <ChartLegend position="right" visible={true} labels={{
-    font: "12px Arial",
-    color: "#111"
-  }}
-  margin={10}
-  padding={5} />
+        <ChartLegend
+          position="right"
+          visible={true}
+          labels={{
+            font: "12px Arial",
+            color: "#111",
+          }}
+          margin={10}
+          padding={5}
+        />
 
         <ChartSeries>
           <ChartSeriesItem
