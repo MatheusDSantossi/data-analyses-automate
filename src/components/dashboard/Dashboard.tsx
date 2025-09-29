@@ -501,8 +501,8 @@ const Dashboard = () => {
       <Reveal className="w-full">
         <div className="" key={key}>
           <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
-          <h2 className="text-2xl font-bold mb-8">Dashboard</h2>
-          <p>File: {file.name ?? "No file selected"}</p>
+          <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
+          <p>File name: {file.name ?? "No file selected"}</p>
 
           <div>
             <div className="flex items-center">
@@ -535,7 +535,7 @@ const Dashboard = () => {
                   Add exported chart
                 </label>
 
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-300">
                   Supported: PDF, PNG, JPG, SVG
                 </div>
               </div>
