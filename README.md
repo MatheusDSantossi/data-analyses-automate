@@ -12,7 +12,7 @@ Upload CSV / XLSX files, perform quick analyses, and build custom charts. UI pow
 
 ## Live demo
 
-- Demo: `<DEMO_URL>` (I need to add this later)
+- [Demo](https://www.loom.com/share/1382adaea79e41e09406bc76caecb3a7?sid=6bc8ff72-ec35-4f9a-b8fa-a67471f236c4)
 
 ## Features
 
@@ -84,6 +84,7 @@ npm run dev
 
 npm run build
 # Deploy `dist/` to <.>
+```
 
 ## How this submission meets the challenge
 
