@@ -3,6 +3,7 @@ import { getResponseForGivenPrompt } from "./GeminiFunctions";
 import { aggregateRowsToWizardData } from "./transformForWizard";
 import { aggregateByTimeSeries } from "./aggregation"; // your earlier helper
 import { toNumber } from "./toNumber";
+import type { GeneratedChart } from "../components/dashboard/Dashboard";
 
 // Build a small per-column summary from sample rows
 export function buildColumnSummary(
@@ -102,6 +103,25 @@ RULES:
 
 Return the JSON only.
 `;
+  return prompt;
+}
+
+export function buildAIRegeneratePrompt(
+  chart: GeneratedChart,
+  ColumnSummary: any
+) {
+  const prompt = `
+  The previous chart had this information:
+
+  ${JSON.stringify(chart)}
+
+  But the user didn't like it. I want you to change the chart recommendation following the JSON above, but changing the data to something else. So we can see if the user will like it. Here's the data:
+
+  ${JSON.stringify(ColumnSummary)}
+
+  return JSON ONLY
+  `;
+
   return prompt;
 }
 

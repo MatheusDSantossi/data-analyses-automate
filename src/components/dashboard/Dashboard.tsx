@@ -20,6 +20,7 @@ import { Tooltip } from "@progress/kendo-react-tooltip";
 import { aggregateRowsToWizardData } from "../../utils/transformForWizard";
 import { analyzeDataWithAI } from "../../utils/aiAnalysis";
 import { FaUpload, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
+import { GrUpdate } from "react-icons/gr";
 
 type UploadedChart = {
   id: string;
@@ -32,7 +33,7 @@ type UploadedChart = {
 
 type ChartKind = "bar" | "line" | "pie" | "donut" | "area";
 
-type GeneratedChart = {
+export type GeneratedChart = {
   id: string;
   kind: ChartKind;
   title: string;
@@ -305,6 +306,15 @@ const Dashboard = () => {
       case "bar":
         return (
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+            <div>
+              <Tooltip anchorElement="target" position="top" parentTitle={true}>
+                <GrUpdate
+                  className="text-primary hover:text-tertiary cursor-pointer"
+                  title="Regenerate chart"
+                  size={18}
+                />
+              </Tooltip>
+            </div>
             <h4 className="mb-2 font-medium">{chart.title}</h4>
             {/* payload.wizardRows is an array of [{field,value},...] */}
             {/* aggregateRowsToWizardData created these rows; your BarChart expects array-of-objects */}
@@ -324,6 +334,15 @@ const Dashboard = () => {
       case "donut":
         return (
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+            <div>
+              <Tooltip anchorElement="target" position="top" parentTitle={true}>
+                <GrUpdate
+                  className="text-primary hover:text-tertiary cursor-pointer"
+                  title="Regenerate chart"
+                  size={18}
+                />
+              </Tooltip>
+            </div>
             <h4 className="mb-2 font-medium">{chart.title}</h4>
             <DonutChart
               seriesData={chart.payload.wizardRows.map(rowToObject)}
@@ -339,6 +358,16 @@ const Dashboard = () => {
       case "area":
         return (
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+            <div>
+              <Tooltip anchorElement="target" position="top" parentTitle={true}>
+                <GrUpdate
+                  className="text-primary hover:text-tertiary cursor-pointer"
+                  title="Regenerate chart"
+                  size={18}
+                  onClick={() => {}}
+                />
+              </Tooltip>
+            </div>
             <h4 className="mb-2 font-medium">{chart.title}</h4>
             <LineChart
               categories={chart.payload.categories}
@@ -547,7 +576,10 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-2 gap-x-[15px] gap-y-[30px]">
               {aiCards?.map((c) => (
-                <div key={c.id} className="flex  flex-col justify-center bg-white rounded-lg shadow-sm p-3">
+                <div
+                  key={c.id}
+                  className="flex  flex-col justify-center bg-white rounded-lg shadow-sm p-3"
+                >
                   <h4 className="text-sm font-medium text-black">{c.label}</h4>
                   <div className="mt-3">
                     {c.cardType === "metric" && (

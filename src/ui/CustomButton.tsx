@@ -13,7 +13,7 @@ const CustomButton = ({ onClick, children, isDisabled }: CustomButtonProps) => {
       className={`${isDisabled ? "pointer-events-none" : ""} flex items-center justify-center`}
     >
       <div style={{ transform: "none" }}>
-        <Tooltip anchorElement="target" position="top" parentTitle={true} >
+        <Tooltip anchorElement="target" position="top" parentTitle={true}>
           <Button
             title="Go to Dashboard ->"
             onClick={onClick}
