@@ -18,7 +18,7 @@ interface BarChartProps {
   seriesData: any[] | undefined;
   field?: string;
   categoryField?: string;
-  mainTitle: string;
+  mainTitle?: string;
   axisTitle: string;
   axisValueTitle: string;
   chartType?: SeriesType | undefined;

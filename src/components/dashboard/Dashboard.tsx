@@ -18,9 +18,10 @@ import "@progress/kendo-theme-default/dist/all.css";
 import { Reveal } from "@progress/kendo-react-animation";
 import { Tooltip } from "@progress/kendo-react-tooltip";
 import { aggregateRowsToWizardData } from "../../utils/transformForWizard";
-import { analyzeDataWithAI } from "../../utils/aiAnalysis";
+import { analyzeDataWithAI, reAnalyzeDataWithAI } from "../../utils/aiAnalysis";
 import { FaUpload, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
 import { GrUpdate } from "react-icons/gr";
+import { mapRecToGeneratedChart } from "../../utils/chartHelperFunctions";
 
 type UploadedChart = {
   id: string;
@@ -31,7 +32,7 @@ type UploadedChart = {
   uploadedAt: number;
 };
 
-type ChartKind = "bar" | "line" | "pie" | "donut" | "area";
+export type ChartKind = "bar" | "line" | "pie" | "donut" | "area";
 
 export type GeneratedChart = {
   id: string;
@@ -44,6 +45,8 @@ export type GeneratedChart = {
   payload: any;
   valid: boolean;
   error?: string;
+  regenerating?: boolean;
+  regenerationAttempts?: number;
 };
 
 const Dashboard = () => {
@@ -148,147 +151,114 @@ const Dashboard = () => {
     parse();
   }, [file, parsedData, navigate, setParsedData]);
 
-  useEffect(() => {
+  const analyzeAll = useCallback(async () => {
     if (!parsedData || parsedData.length === 0) return;
+    setAiBusy(true);
+    try {
+      const recs = await analyzeDataWithAI(parsedData, { sampleLimit: 50 });
+      setAiRecommendations(recs);
+      if (recs.cardPayloads) setAiCards(recs.cardPayloads);
 
-    let mounted = true;
-    const run = async () => {
+      const mapped: GeneratedChart[] = (recs.recommendedCharts || []).map(
+        (rec: any, idx: number) => mapRecToGeneratedChart(rec, idx, parsedData)
+      );
+
+      setGeneratedCharts(mapped);
+    } catch (err) {
+      console.error("AI analysis failed:", err);
+    } finally {
+      setAiBusy(false);
+    }
+  }, [parsedData]);
+
+  const handleRegenerate = useCallback(
+    async (chartId: string) => {
+      const current = generatedCharts?.find((c) => c.id === chartId);
+      if (!current) return;
+
+      // limit attempts
+      const attempts = (current.regenerationAttempts ?? 0) + 1;
+      if (attempts > 5) {
+        // show toast / warning
+        console.warn("Regeneration limit reached for", chartId);
+        return;
+      }
+
       try {
         setAiBusy(true);
-        // limit to a sample to reduce cost and keep privacy
-        const recs = await analyzeDataWithAI(parsedData, { sampleLimit: 20 });
-        if (!mounted) return;
-
-        console.log("recs: ", recs);
-
-        setAiRecommendations(recs);
-
-        if (recs.cardPayloads) {
-          setAiCards(recs.cardPayloads);
-        }
-
-        const charts: GeneratedChart[] = (recs.recommendedCharts || []).map(
-          (rec: any, idx: number) => {
-            const id = `ai-${idx}-${rec.chartType}-${rec.groupBy ?? "nogroup"}`;
-            const kind = rec.chartType as ChartKind;
-            const title =
-              rec.explain || `${rec.chartType} of ${rec.metric ?? "value"}`;
-
-            // validation
-            const groupExists =
-              !!rec.groupBy &&
-              parsedData[0] &&
-              parsedData[0].hasOwnProperty(rec.groupBy);
-            const metricExists =
-              !!rec.metric &&
-              parsedData[0] &&
-              parsedData[0].hasOwnProperty(rec.metric);
-
-            if (kind === "bar" || kind === "pie" || kind === "donut") {
-              if (!groupExists || !metricExists) {
-                return {
-                  id,
-                  kind,
-                  title,
-                  recommendation: rec,
-                  payload: null,
-                  valid: false,
-                  error: "Missing groupBy/metric in data",
-                };
-              }
-              // aggregator returns ChartWizardDataRow[] (unique rows per group)
-              const wizardRows = aggregateRowsToWizardData(
-                parsedData,
-                rec.groupBy,
-                [rec.metric],
-                { topN: rec.topN ?? 10, sortDesc: true }
-              );
-              return {
-                id,
-                kind,
-                title,
-                recommendation: rec,
-                payload: { wizardRows },
-                valid: true,
-              };
-            }
-
-            if (kind === "line" || kind === "area") {
-              // need date-based series
-              // attempt to identify date field — prefer rec.dateField else fallback to known names
-              const dateField =
-                rec.dateField ||
-                (parsedData[0].Data_Pedido
-                  ? "Data_Pedido"
-                  : Object.keys(parsedData[0]).find((k) =>
-                      /date|data|dt/i.test(k)
-                    ));
-              // validate that dateField exists
-              if (
-                !dateField ||
-                !parsedData[0].hasOwnProperty(dateField) ||
-                !metricExists
-              ) {
-                return {
-                  id,
-                  kind,
-                  title,
-                  recommendation: rec,
-                  payload: null,
-                  valid: false,
-                  error: "Missing date or metric",
-                };
-              }
-              const { categories, series } = aggregateByTimeSeries(parsedData, {
-                dateField,
-                valueField: rec.metric,
-                groupByField: rec.groupBy, // groupBy can be null -> single series
-                granularity: rec.granularity ?? "month-year",
-                topN: rec.topN ?? 10,
-                fillMissing: true,
-                localeMonthLabels: "en-US",
-              });
-              return {
-                id,
-                kind,
-                title,
-                recommendation: rec,
-                payload: { categories, series },
-                valid: true,
-              };
-            }
-
-            // fallback for unexpected types
-            return {
-              id,
-              kind,
-              title,
-              recommendation: rec,
-              payload: null,
-              valid: false,
-              error: "Unsupported chart type",
-            };
-          }
+        // mark regenerating in UI
+        setGeneratedCharts((prev) =>
+          (prev || []).map((c) =>
+            c.id === chartId ? { ...c, regenerating: true } : c
+          )
         );
 
-        // remove invalid ones if you'd like, or keep them to show user errors
-        const filtered = charts; // or charts.filter(c => c.valid)
-
-        if (mounted) {
-          setGeneratedCharts(filtered);
+        // call your reAnalyze function — it returns the new recs
+        const recs = await reAnalyzeDataWithAI(current, attempts, parsedData, {
+          sampleLimit: 50,
+        });
+        if (!recs) {
+          // nothing returned
+          setGeneratedCharts((prev) =>
+            (prev || []).map((c) =>
+              c.id === chartId ? { ...c, regenerating: false } : c
+            )
+          );
+          setAiBusy(false);
+          return;
         }
+
+        // update cards if AI returned new card payloads
+        if (recs.cardPayloads) setAiCards(recs.cardPayloads);
+        setAiRecommendations(recs);
+
+        // decide replacement strategy: use first recommendedChart to replace this chart
+        const firstRec = recs.recommendedCharts?.[0];
+        if (!firstRec) {
+          // nothing to replace
+          setGeneratedCharts((prev) =>
+            (prev || []).map((c) =>
+              c.id === chartId ? { ...c, regenerating: false } : c
+            )
+          );
+          return;
+        }
+
+        // attach regenerationAttempts value on the rec so mapping helper preserves it
+        firstRec.regenerationAttempts = attempts;
+        const newGenChart = mapRecToGeneratedChart(
+          firstRec,
+          Date.now(),
+          parsedData
+        );
+
+        // replace in state (preserve order)
+        setGeneratedCharts((prev) =>
+          (prev || []).map((c) =>
+            c.id === chartId ? { ...newGenChart, regenerating: false } : c
+          )
+        );
       } catch (err) {
-        console.error("AI analysis failed:", err);
+        console.error("Regenerate failed", err);
+        setGeneratedCharts((prev) =>
+          (prev || []).map((c) =>
+            c.id === chartId ? { ...c, regenerating: false } : c
+          )
+        );
       } finally {
         setAiBusy(false);
       }
-    };
+    },
+    [generatedCharts, parsedData]
+  );
 
-    run();
-    return () => {
-      mounted = false;
-    };
-  }, [parsedData]);
+  useEffect(() => {
+    if (!parsedData || parsedData.length === 0) return;
+
+    (async () => {
+      await analyzeAll();
+    })();
+  }, [parsedData, analyzeAll]);
 
   const ChartRenderer: React.FC<{ chart: GeneratedChart }> = ({ chart }) => {
     if (!chart.valid) {
@@ -310,12 +280,15 @@ const Dashboard = () => {
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <GrUpdate
                   className="text-primary hover:text-tertiary cursor-pointer"
-                  title="Regenerate chart"
+                  title={chart.regenerating ? "Regenerating..." : "Regenerate"}
                   size={18}
+                  onClick={() => {
+                    handleRegenerate(chart.id);
+                  }}
                 />
               </Tooltip>
             </div>
-            <h4 className="mb-2 font-medium">{chart.title}</h4>
+            <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
             {/* payload.wizardRows is an array of [{field,value},...] */}
             {/* aggregateRowsToWizardData created these rows; your BarChart expects array-of-objects */}
             {/* Convert wizardRows to array-of-objects if needed: */}
@@ -324,7 +297,7 @@ const Dashboard = () => {
               chartType="column"
               field="Valor_Venda"
               categoryField={chart.recommendation.groupBy}
-              mainTitle={chart.title}
+              // mainTitle={chart.title}
               axisTitle={chart.recommendation.groupBy}
               axisValueTitle={chart.recommendation.metric}
             />
@@ -340,15 +313,18 @@ const Dashboard = () => {
                   className="text-primary hover:text-tertiary cursor-pointer"
                   title="Regenerate chart"
                   size={18}
+                  onClick={() => {
+                    handleRegenerate(chart.id);
+                  }}
                 />
               </Tooltip>
             </div>
-            <h4 className="mb-2 font-medium">{chart.title}</h4>
-            <DonutChart
+            <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
+            <DonutChart 
               seriesData={chart.payload.wizardRows.map(rowToObject)}
               categoryField={chart.recommendation.groupBy}
               valueField={chart.recommendation.metric}
-              mainTitle={chart.title}
+              // mainTitle={chart.title}
               axisTitle={chart.recommendation.groupBy}
               valueAxisTitle={chart.recommendation.metric}
             />
@@ -364,15 +340,17 @@ const Dashboard = () => {
                   className="text-primary hover:text-tertiary cursor-pointer"
                   title="Regenerate chart"
                   size={18}
-                  onClick={() => {}}
+                  onClick={() => {
+                    handleRegenerate(chart.id);
+                  }}
                 />
               </Tooltip>
             </div>
-            <h4 className="mb-2 font-medium">{chart.title}</h4>
+            <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
             <LineChart
               categories={chart.payload.categories}
               seriesData={chart.payload.series}
-              mainTitle={chart.title}
+              // mainTitle={chart.title}
               axisTitle={
                 chart.recommendation.groupBy ?? chart.recommendation.metric
               }
@@ -389,10 +367,6 @@ const Dashboard = () => {
   const makeId = (prefix = "up") =>
     `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-  const handleOpenFilePicker = () => {
-    console.log("open file picker clicked", fileInputRef.current);
-    fileInputRef.current?.click();
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fl = e.target.files;
