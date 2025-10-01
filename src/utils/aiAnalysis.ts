@@ -5,6 +5,12 @@ import { aggregateByTimeSeries } from "./aggregation"; // your earlier helper
 import { toNumber } from "./toNumber";
 import type { GeneratedChart } from "../components/dashboard/Dashboard";
 
+interface RegenerationState {
+  originalChart: GeneratedChart;
+  columnSummary: any;
+  regenerationAttempts: number;
+}
+
 // Build a small per-column summary from sample rows
 export function buildColumnSummary(
   rows: Record<string, any>[],
@@ -106,21 +112,29 @@ Return the JSON only.
   return prompt;
 }
 
-export function buildAIRegeneratePrompt(
-  chart: GeneratedChart,
-  ColumnSummary: any
-) {
+export function buildAIRegeneratePrompt({
+  originalChart,
+  columnSummary,
+  regenerationAttempts,
+}: RegenerationState) {
+  console.log("original chart: ", JSON.stringify(originalChart));
+
   const prompt = `
-  The previous chart had this information:
+    You are given the previous chart recommendation (JSON) and a compact dataset column summary.
+    Return JSON ONLY with the same schema used in the original analysis: { recommendedCharts: [ ... ], recommendedCards: [ ... ], columns: [...] }.
 
-  ${JSON.stringify(chart)}
+    Goal: propose an *alternative* chart recommendation for the user because they rejected the original. Avoid recommending the exact same groupBy+metric as the original; prefer a different metric, group or chart type. If no alternative is possible, indicate an empty recommendedCharts array.
 
-  But the user didn't like it. I want you to change the chart recommendation following the JSON above, but changing the data to something else. So we can see if the user will like it. Here's the data:
+    Original chart:
+    ${JSON.stringify(originalChart)}
 
-  ${JSON.stringify(ColumnSummary)}
+    Column summary:
+    ${JSON.stringify(columnSummary)}
 
-  return JSON ONLY
+    Return up to 3 alternative recommendedCharts and up to 3 recommendedCards. Use "explain" for a 1-line rationale. The JSON you return must have the same structure of the Original chart json and the same id, only with new recommendations.
   `;
+
+  if (regenerationAttempts > 5) return null;
 
   return prompt;
 }
@@ -150,6 +164,46 @@ export async function analyzeDataWithAI(
 
   const columnSummary = buildColumnSummary(sampleRows, sampleLimit);
   const prompt = buildAIPrompt(columnSummary, sampleRows.length);
+
+  const raw = await getResponseForGivenPrompt(prompt); // returns string
+  const parsed = extractJson(raw); // your robust extractor
+  if (!parsed) throw new Error("AI returned no JSON");
+
+  // parsed.recommendedCharts (existing)
+  const recCharts = parsed.recommendedCharts ?? [];
+  const recCards = parsed.recommendedCards ?? [];
+
+  // Compute local card values (do not trust AI to compute numbers)
+  const cardPayloads = computeCardValues(rows, recCards);
+
+  return {
+    columns: parsed.columns,
+    recommendedCharts: recCharts,
+    recommendedCards: recCards,
+    cardPayloads,
+  };
+}
+
+export async function reAnalyzeDataWithAI(
+  originalChart: GeneratedChart,
+  regenerationAttempts: number,
+  rows: Record<string, any>[],
+  options?: { sampleLimit?: number }
+) {
+  const sampleLimit = options?.sampleLimit ?? 200;
+  const sampleRows = Array.isArray(rows)
+    ? rows.slice(0, Math.min(sampleLimit, rows.length))
+    : [];
+  if (sampleRows.length === 0) throw new Error("No rows to analyze");
+
+  const columnSummary = buildColumnSummary(sampleRows, sampleLimit);
+  const prompt = buildAIRegeneratePrompt({
+    originalChart,
+    columnSummary,
+    regenerationAttempts,
+  });
+
+  if (!prompt) return null;
 
   const raw = await getResponseForGivenPrompt(prompt); // returns string
   const parsed = extractJson(raw); // your robust extractor
