@@ -1,23 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useFile } from "../../context/FileContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
 import ExcelJS from "exceljs";
 import BarChart from "./charts/BarChart";
-import { aggregateBy, aggregateByTimeSeries } from "../../utils/aggregation";
 import LineChart from "./charts/LineChart";
 import DonutChart from "./charts/DonutChart";
-import AreaChart from "./charts/AreaChart";
-import PieChart from "./charts/PieChart";
-import CardDashboard from "./charts/Card";
 import { FaPencilAlt } from "react-icons/fa";
-import { getResponseForGivenPrompt } from "../../utils/GeminiFunctions";
 import ProgressBarComp from "../../ui/ProgressBarComp";
 import { Skeleton } from "@progress/kendo-react-indicators";
 import "@progress/kendo-theme-default/dist/all.css";
 import { Reveal } from "@progress/kendo-react-animation";
 import { Tooltip } from "@progress/kendo-react-tooltip";
-import { aggregateRowsToWizardData } from "../../utils/transformForWizard";
 import { analyzeDataWithAI, reAnalyzeDataWithAI } from "../../utils/aiAnalysis";
 import { FaUpload, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
 import { GrUpdate } from "react-icons/gr";
@@ -54,11 +47,11 @@ const Dashboard = () => {
   // File Context
   const { file, parsedData, setParsedData } = useFile();
 
+  // hooks
   const navigate = useNavigate();
 
   // States
   const [uploadedCharts, setUploadedCharts] = useState<UploadedChart[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [generatedCharts, setGeneratedCharts] = useState<
     GeneratedChart[] | null
   >(null);
@@ -66,24 +59,10 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState<any | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState<number | undefined>(
-    undefined
-  );
+  // const [loadingProgress, setLoadingProgress] = useState<number | undefined>(
+  //   undefined
+  // );
   const [barChartData, setBarChartData] = useState<any[] | undefined>(
-    undefined
-  );
-  const [pieChartData, setPieChartData] = useState<any[] | undefined>(
-    undefined
-  );
-  const [donutChartData, setDonutChartData] = useState<any[] | undefined>(
-    undefined
-  );
-
-  const [categoriesLineChart, setCategoriesLineChart] = useState<
-    any[] | undefined
-  >(undefined);
-
-  const [lineChartData, setLineChartData] = useState<any[] | undefined>(
     undefined
   );
 
@@ -138,7 +117,7 @@ const Dashboard = () => {
           const workbook = new ExcelJS.Workbook();
           workbook.xlsx.load(arrayBuffer);
           const sheet = workbook.worksheets[0];
-          const rows = [];
+          const rows: any[] = [];
 
           sheet.eachRow((row) => rows.push(row.values));
 
@@ -217,11 +196,12 @@ const Dashboard = () => {
             )
           );
           setAiBusy(false);
+
           return;
         }
 
         // update cards if AI returned new card payloads
-        if (recs.cardPayloads) setAiCards(recs.cardPayloads);
+        // if (recs.cardPayloads) setAiCards(recs.cardPayloads);
         setAiRecommendations(recs);
 
         // decide replacement strategy: use first recommendedChart to replace this chart
@@ -293,6 +273,8 @@ const Dashboard = () => {
     })();
   }, [parsedData, analyzeAll]);
 
+  console.log("generated chart: ", generatedCharts);
+
   const ChartRenderer: React.FC<{ chart: GeneratedChart }> = ({ chart }) => {
     if (!chart.valid) {
       return (
@@ -311,14 +293,21 @@ const Dashboard = () => {
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
-                <GrUpdate
-                  className="text-primary hover:text-tertiary cursor-pointer"
-                  title={chart.regenerating ? "Regenerating..." : "Regenerate"}
-                  size={18}
+                <button
+                  disabled={chart.regenerating}
+                  className="flex justify-start p-2"
                   onClick={() => {
                     handleRegenerate(chart.id);
                   }}
-                />
+                >
+                  <GrUpdate
+                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    title={
+                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                    }
+                    size={18}
+                  />
+                </button>
               </Tooltip>
             </div>
             <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
@@ -336,20 +325,27 @@ const Dashboard = () => {
             />
           </div>
         );
-      case "pie":
+      case "pie": // FIX: Add the other charts to the case switch
       case "donut":
         return (
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
-                <GrUpdate
-                  className="text-primary hover:text-tertiary cursor-pointer"
-                  title="Regenerate chart"
-                  size={18}
+                <button
+                  disabled={chart.regenerating}
+                  className="flex justify-start p-2"
                   onClick={() => {
                     handleRegenerate(chart.id);
                   }}
-                />
+                >
+                  <GrUpdate
+                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    title={
+                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                    }
+                    size={18}
+                  />
+                </button>
               </Tooltip>
             </div>
             <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
@@ -369,14 +365,21 @@ const Dashboard = () => {
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
-                <GrUpdate
-                  className="text-primary hover:text-tertiary cursor-pointer"
-                  title="Regenerate chart"
-                  size={18}
+                <button
+                  disabled={chart.regenerating}
+                  className="flex justify-start p-2"
                   onClick={() => {
                     handleRegenerate(chart.id);
                   }}
-                />
+                >
+                  <GrUpdate
+                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    title={
+                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                    }
+                    size={18}
+                  />
+                </button>
               </Tooltip>
             </div>
             <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
@@ -446,7 +449,9 @@ const Dashboard = () => {
       uploadedCharts.forEach((u) => {
         try {
           URL.revokeObjectURL(u.url);
-        } catch {}
+        } catch (err) {
+          console.error("Error removing chart: ", err);
+        }
       });
     };
   }, [uploadedCharts]);

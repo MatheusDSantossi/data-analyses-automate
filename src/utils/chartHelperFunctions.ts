@@ -72,6 +72,8 @@ export function mapRecToGeneratedChart(
       }
     );
 
+    console.log("wizardRows: ", wizardRows);
+
     return {
       id,
       kind,
