@@ -22,6 +22,7 @@ import { analyzeDataWithAI, reAnalyzeDataWithAI } from "../../utils/aiAnalysis";
 import { FaUpload, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
 import { GrUpdate } from "react-icons/gr";
 import { mapRecToGeneratedChart } from "../../utils/chartHelperFunctions";
+import { fuzzyMatchColumn } from "../../utils/fields";
 
 type UploadedChart = {
   id: string;
@@ -85,6 +86,9 @@ const Dashboard = () => {
   const [lineChartData, setLineChartData] = useState<any[] | undefined>(
     undefined
   );
+
+  // Ref
+  const regenInProgressRef = useRef<Set<string>>(new Set());
 
   const [key, setKey] = useState(0); // Key to force re-rendering of Reveal component
   useEffect(() => {
@@ -173,6 +177,11 @@ const Dashboard = () => {
 
   const handleRegenerate = useCallback(
     async (chartId: string) => {
+      if (regenInProgressRef.current.has(chartId)) {
+        console.log("regeneration already in progress for", chartId);
+        return;
+      }
+
       const current = generatedCharts?.find((c) => c.id === chartId);
       if (!current) return;
 
@@ -185,7 +194,9 @@ const Dashboard = () => {
       }
 
       try {
+        regenInProgressRef.current.add(chartId);
         setAiBusy(true);
+
         // mark regenerating in UI
         setGeneratedCharts((prev) =>
           (prev || []).map((c) =>
@@ -197,6 +208,7 @@ const Dashboard = () => {
         const recs = await reAnalyzeDataWithAI(current, attempts, parsedData, {
           sampleLimit: 50,
         });
+
         if (!recs) {
           // nothing returned
           setGeneratedCharts((prev) =>
@@ -226,6 +238,27 @@ const Dashboard = () => {
 
         // attach regenerationAttempts value on the rec so mapping helper preserves it
         firstRec.regenerationAttempts = attempts;
+
+        // IMPORTANT: if fuzzy matching was applied earlier, rec.groupBy/metric should already be valid.
+        // But we double-check:
+        const colNames = Object.keys(parsedData[0] || {});
+        const groupOk =
+          !firstRec.groupBy || colNames.includes(firstRec.groupBy);
+        const metricOk = !firstRec.metric || colNames.includes(firstRec.metric);
+
+        // If ai returned invalid field names, try fuzzy match now (final attempt)
+        if (!groupOk || !metricOk) {
+          if (!groupOk && firstRec.groupBy) {
+            const gm = fuzzyMatchColumn(firstRec.groupBy, colNames);
+            if (gm) firstRec.groupBy = gm;
+          }
+          if (!metricOk && firstRec.metric) {
+            const mm = fuzzyMatchColumn(firstRec.metric, colNames);
+            if (mm) firstRec.metric = mm;
+          }
+        }
+
+        // Building new GeneratedCarts
         const newGenChart = mapRecToGeneratedChart(
           firstRec,
           Date.now(),
@@ -320,7 +353,7 @@ const Dashboard = () => {
               </Tooltip>
             </div>
             <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
-            <DonutChart 
+            <DonutChart
               seriesData={chart.payload.wizardRows.map(rowToObject)}
               categoryField={chart.recommendation.groupBy}
               valueField={chart.recommendation.metric}
@@ -366,7 +399,6 @@ const Dashboard = () => {
   // helpers
   const makeId = (prefix = "up") =>
     `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
-
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fl = e.target.files;

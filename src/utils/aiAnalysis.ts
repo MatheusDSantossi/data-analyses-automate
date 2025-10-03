@@ -4,6 +4,7 @@ import { aggregateRowsToWizardData } from "./transformForWizard";
 import { aggregateByTimeSeries } from "./aggregation"; // your earlier helper
 import { toNumber } from "./toNumber";
 import type { GeneratedChart } from "../components/dashboard/Dashboard";
+import { fuzzyMatchColumn } from "./fields";
 
 interface RegenerationState {
   originalChart: GeneratedChart;
@@ -117,22 +118,49 @@ export function buildAIRegeneratePrompt({
   columnSummary,
   regenerationAttempts,
 }: RegenerationState) {
-  console.log("original chart: ", JSON.stringify(originalChart));
+  // console.log("original chart: ", JSON.stringify(originalChart));
+
+  // preparing simple lsit of column names (safe)
+  const columnNames =
+    columnSummary && Array.isArray(columnSummary.columns)
+      ? columnSummary.columns.map((c: any) => c.name)
+      : [];
 
   const prompt = `
-    You are given the previous chart recommendation (JSON) and a compact dataset column summary.
-    Return JSON ONLY with the same schema used in the original analysis: { recommendedCharts: [ ... ], recommendedCards: [ ... ], columns: [...] }.
+    You are given:
+    1) The previous chart recommendation (JSON object).
+    2) A compact dataset column summary and the list of available column NAMES.
 
-    Goal: propose an *alternative* chart recommendation for the user because they rejected the original. Avoid recommending the exact same groupBy+metric as the original; prefer a different metric, group or chart type. If no alternative is possible, indicate an empty recommendedCharts array.
+    Return JSON ONLY with the same structure used in the original analysis:
+    {
+      "columns": [...],
+      "recommendedCharts": [ { "chartType": "bar|line|pie|donut|area", "groupBy": <columnName|null>, "metric": <columnName|null>, "aggregation": "sum|avg|count|none", "granularity": "month-year|year|day|none", "topN": <int|null>, "explain": <string> } ],
+      "recommendedCards": [ ... ]
+    }
 
-    Original chart:
-    ${JSON.stringify(originalChart)}
+    RULES:
+    - Use ONLY the provided column NAMES in the 'groupBy' and 'metric' fields. For example: "Categoria", "Valor_Venda".
+    - Do NOT invent new column names.
+    - Prefer suggestions that are *different* from the original chart's groupBy+metric combination.
+    - If you cannot find an alternative, return an empty array for recommendedCharts.
+    - Return up to 3 recommendedCharts and up to 3 recommendedCards.
+    - Output valid JSON and nothing else.
 
-    Column summary:
+    Original chart (short):
+    ${JSON.stringify({
+      id: originalChart?.id,
+      kind: originalChart?.kind,
+      recommendation: originalChart?.recommendation,
+    })}
+
+    Available column NAMES:
+    ${JSON.stringify(columnNames)}
+
+    Column summary (short):
     ${JSON.stringify(columnSummary)}
 
-    Return up to 3 alternative recommendedCharts and up to 3 recommendedCards. Use "explain" for a 1-line rationale. The JSON you return must have the same structure of the Original chart json and the same id, only with new recommendations.
-  `;
+    Return only JSON, nothing else.
+    `;
 
   if (regenerationAttempts > 5) return null;
 
@@ -210,7 +238,24 @@ export async function reAnalyzeDataWithAI(
   if (!parsed) throw new Error("AI returned no JSON");
 
   // parsed.recommendedCharts (existing)
-  const recCharts = parsed.recommendedCharts ?? [];
+  const recChartsRaw = parsed.recommendedCharts ?? [];
+  const colNames = Object.keys(sampleRows[0] || {});
+
+  // Trying to map AI returned recommendatiosn to real columns using fuzzy matching
+  const recChartsMapped = (recChartsRaw as any[]).map((rc) => {
+    const mapped: any = { ...rc };
+
+    mapped._original = rc; // keep original suggestion for debugging
+    mapped.groupByMapped = fuzzyMatchColumn(rc.groupBy, colNames);
+    mapped.metricMapped = fuzzyMatchColumn(rc.metric, colNames);
+
+    // prefer exact mapped names for later processing
+    if (mapped.groupByMapped) mapped.groupBy = mapped.groupByMapped;
+    if (mapped.metricByMapped) mapped.groupBy = mapped.metricByMapped;
+
+    return mapped;
+  });
+
   const recCards = parsed.recommendedCards ?? [];
 
   // Compute local card values (do not trust AI to compute numbers)
@@ -218,9 +263,10 @@ export async function reAnalyzeDataWithAI(
 
   return {
     columns: parsed.columns,
-    recommendedCharts: recCharts,
+    recommendedCharts: recChartsMapped,
     recommendedCards: recCards,
     cardPayloads,
+    rawAIResponse: parsed,
   };
 }
 

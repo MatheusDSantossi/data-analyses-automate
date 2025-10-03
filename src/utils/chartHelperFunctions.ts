@@ -12,14 +12,39 @@ export function mapRecToGeneratedChart(
 ): GeneratedChart {
   const id = rec.id ?? `ai-${idx}-${rec.chartType}-${rec.groupBy ?? "nogroup"}`;
   const kind = rec.chartType as ChartKind;
-  const title = rec.explain || `${rec.chartTyoe} of ${rec.metric ?? "value"}`;
+  const title = rec.explain || `${rec.chartType} of ${rec.metric ?? "value"}`;
 
   const groupExists =
     !!rec.groupBy && parsedData[0] && parsedData[0].hasOwnProperty(rec.groupBy);
   const metricExists =
     !!rec.metric && parsedData[0] && parsedData[0].hasOwnProperty(rec.metric);
 
-    console.log("rec inside chart helper: ", rec)
+  console.log("rec inside chart helper: ", rec);
+
+  /**
+  * RETURN TEST
+  * {
+    "chartType": "bar",
+    "groupBy": "Categoria",
+    "metric": "Valor_Venda",
+    "aggregation": "sum",
+    "granularity": "none",
+    "topN": null,
+    "explain": "Bar chart showing the total sales value for each product category.",
+    "_original": {
+        "chartType": "bar",
+        "groupBy": "Categoria",
+        "metric": "Valor_Venda",
+        "aggregation": "sum",
+        "granularity": "none",
+        "topN": null,
+        "explain": "Bar chart showing the total sales value for each product category."
+    },
+    "groupByMapped": "Categoria",
+    "metricMapped": "Valor_Venda",
+    "regenerationAttempts": 1
+}
+  */
 
   //   BAR / PIE / DONUT
   if (kind === "bar" || kind === "pie" || kind === "donut") {
