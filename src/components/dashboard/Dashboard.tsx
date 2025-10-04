@@ -16,6 +16,8 @@ import { FaUpload, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
 import { GrUpdate } from "react-icons/gr";
 import { mapRecToGeneratedChart } from "../../utils/chartHelperFunctions";
 import { fuzzyMatchColumn } from "../../utils/fields";
+import PieChart from "./charts/PieChart";
+import AreaChart from "./charts/AreaChart";
 
 type UploadedChart = {
   id: string;
@@ -62,9 +64,9 @@ const Dashboard = () => {
   // const [loadingProgress, setLoadingProgress] = useState<number | undefined>(
   //   undefined
   // );
-  const [barChartData, setBarChartData] = useState<any[] | undefined>(
-    undefined
-  );
+  // const [barChartData, setBarChartData] = useState<any[] | undefined>(
+  //   undefined
+  // );
 
   // Ref
   const regenInProgressRef = useRef<Set<string>>(new Set());
@@ -86,9 +88,9 @@ const Dashboard = () => {
   // Consider "ready" when arrays exist and have length > 0
   const isReady = useMemo(() => {
     const hasParsed = Array.isArray(parsedData) && parsedData.length > 0;
-    const hasBar = Array.isArray(barChartData) && barChartData.length > 0;
+    const hasBar = Array.isArray(generatedCharts) && generatedCharts.length > 0;
     return !loading && hasParsed && hasBar;
-  }, [loading, parsedData, barChartData]);
+  }, [loading, parsedData, generatedCharts]);
 
   useEffect(() => {
     if (!file) {
@@ -107,25 +109,61 @@ const Dashboard = () => {
         const arrayBuffer = await file.arrayBuffer();
         // Detect file type by extension
         const filename = file.name.toLowerCase();
+        
         if (filename.endsWith(".csv")) {
           // csv -> read as text
           const text = new TextDecoder().decode(arrayBuffer);
           const rows = csvToJson(text); // helper
           setParsedData(rows);
         } else {
-          // xslx/xlsx... -> we use SheetJS
+          // xslx/xlsx... -> we're using SheetJS
           const workbook = new ExcelJS.Workbook();
-          workbook.xlsx.load(arrayBuffer);
+          console.log("arrayBuffer: ", arrayBuffer);
+
+          await workbook.xlsx.load(arrayBuffer); // it returns a load promise
+          
+          console.log("workbook: ", workbook);
+          if (!workbook.worksheets || workbook.worksheets.length === 0) {
+            navigate("/");
+            throw new Error("No worksheets found in workbook");
+          }
+          
           const sheet = workbook.worksheets[0];
-          const rows: any[] = [];
+          
+          console.log("sheet: ", sheet);
+          // Read header from first row
+          const headerRow: any = sheet.getRow(1);
+          
+          // headerRow.calues is 1-based: [, "col1", "col2", ...]
+          const headers = (headerRow.values || [])
+            .slice(1)
+            .map((h: any) => String(h ?? "").trim());
 
-          sheet.eachRow((row) => rows.push(row.values));
+          const result: Record<string, any>[] = [];
 
-          setParsedData(rows);
+          sheet.eachRow((row: any, rowNumber: any) => {
+            // skip header (if you used headerRow)
+            if (rowNumber === 1) return;
+
+            // ExcelJS row.values is 1-based
+            const values = (row.values || []).slice(1);
+            const obj: Record<string, any> = {};
+
+            headers.forEach((h: any, i: any) => {
+              obj[h] = values[i] !== undefined ? values[i] : null;
+            });
+
+            result.push(obj);
+          });
+
+          console.log("result: ", result);
+
+          setParsedData(result);
         }
       } catch (err) {
         console.log("Parsing error", err);
         alert("Error parsing file. See console for details;");
+        setParsedData(null);
       } finally {
         setLoading(false);
       }
@@ -273,8 +311,6 @@ const Dashboard = () => {
     })();
   }, [parsedData, analyzeAll]);
 
-  console.log("generated chart: ", generatedCharts);
-
   const ChartRenderer: React.FC<{ chart: GeneratedChart }> = ({ chart }) => {
     if (!chart.valid) {
       return (
@@ -325,7 +361,39 @@ const Dashboard = () => {
             />
           </div>
         );
-      case "pie": // FIX: Add the other charts to the case switch
+      case "pie":
+        return (
+          <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+            <div>
+              <Tooltip anchorElement="target" position="top" parentTitle={true}>
+                <button
+                  disabled={chart.regenerating}
+                  className="flex justify-start p-2"
+                  onClick={() => {
+                    handleRegenerate(chart.id);
+                  }}
+                >
+                  <GrUpdate
+                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    title={
+                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                    }
+                    size={18}
+                  />
+                </button>
+              </Tooltip>
+            </div>
+            <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
+            <PieChart
+              seriesData={chart.payload.wizardRows.map(rowToObject)}
+              categoryField={chart.recommendation.groupBy}
+              valueField={chart.recommendation.metric}
+              // mainTitle={chart.title}
+              // axisTitle={chart.recommendation.groupBy}
+              // valueAxisTitle={chart.recommendation.metric}
+            />
+          </div>
+        );
       case "donut":
         return (
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
@@ -360,7 +428,6 @@ const Dashboard = () => {
           </div>
         );
       case "line":
-      case "area":
         return (
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
             <div>
@@ -384,6 +451,40 @@ const Dashboard = () => {
             </div>
             <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
             <LineChart
+              categories={chart.payload.categories}
+              seriesData={chart.payload.series}
+              // mainTitle={chart.title}
+              axisTitle={
+                chart.recommendation.groupBy ?? chart.recommendation.metric
+              }
+              valueAxisTitle={chart.recommendation.metric}
+            />
+          </div>
+        );
+      case "area":
+        return (
+          <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+            <div>
+              <Tooltip anchorElement="target" position="top" parentTitle={true}>
+                <button
+                  disabled={chart.regenerating}
+                  className="flex justify-start p-2"
+                  onClick={() => {
+                    handleRegenerate(chart.id);
+                  }}
+                >
+                  <GrUpdate
+                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    title={
+                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                    }
+                    size={18}
+                  />
+                </button>
+              </Tooltip>
+            </div>
+            <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
+            <AreaChart
               categories={chart.payload.categories}
               seriesData={chart.payload.series}
               // mainTitle={chart.title}
@@ -536,6 +637,8 @@ const Dashboard = () => {
     );
   };
 
+  const chartSlots = [1, 2, 3, 4, 5];
+
   return (
     <div className="w-full p-6 mt-10">
       <Reveal className="w-full">
@@ -545,41 +648,49 @@ const Dashboard = () => {
           <p>File name: {file.name ?? "No file selected"}</p>
 
           <div>
-            <div className="flex items-center">
-              <Tooltip anchorElement="target" position="top" parentTitle={true}>
-                <FaPencilAlt
-                  title="Create Chart"
-                  className="cursor-pointer hover:text-tertiary mb-3"
-                  size={18}
-                  onClick={() => {
-                    navigate("/edit");
-                  }}
-                />
-              </Tooltip>
-              {/* Upload control: label-for-input approach (recommended) */}
-              <div className="mb-4 flex items-center gap-3">
-                <input
-                  id="upload-chart-input"
-                  type="file"
-                  accept=".pdf,.svg,.png,.jpg,.jpeg,.webp"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-
-                <label
-                  htmlFor="upload-chart-input"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-dark text-white rounded cursor-pointer select-none hover:text-tertiary"
-                  role="button"
+            {isReady ? (
+              <div className="flex items-center">
+                <Tooltip
+                  anchorElement="target"
+                  position="top"
+                  parentTitle={true}
                 >
-                  <FaUpload />
-                  Add exported chart
-                </label>
+                  <FaPencilAlt
+                    title="Create Chart"
+                    className="cursor-pointer hover:text-tertiary mb-3"
+                    size={18}
+                    onClick={() => {
+                      navigate("/edit");
+                    }}
+                  />
+                </Tooltip>
+                {/* Upload control: label-for-input approach (recommended) */}
+                <div className="mb-4 flex items-center gap-3">
+                  <input
+                    id="upload-chart-input"
+                    type="file"
+                    accept=".pdf,.svg,.png,.jpg,.jpeg,.webp"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
 
-                <div className="text-sm text-gray-300">
-                  Supported: PDF, PNG, JPG, SVG
+                  <label
+                    htmlFor="upload-chart-input"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-dark text-white rounded cursor-pointer select-none hover:text-tertiary"
+                    role="button"
+                  >
+                    <FaUpload />
+                    Add exported chart
+                  </label>
+
+                  <div className="text-sm text-gray-300">
+                    Supported: PDF, PNG, JPG, SVG
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <Skeleton shape="text" style={{ width: "100%", height: 30 }} />
+            )}
             {/* <h3 className="mt-4">Preview (first 5 rows)</h3>
             <pre className="overflow-auto max-h-64 text-sm bg-gray-900 text-white p-2 rounded my-10">
               {JSON.stringify(parsedData.slice(0, 5), null, 2)}
@@ -658,7 +769,64 @@ const Dashboard = () => {
               ) : (
                 // fallback skeleton / message
                 <div className="col-span-full text-sm text-gray-500">
-                  No auto charts generated yet.
+                  {/* preview box skeleton */}
+                  <div className="my-6">
+                    <Skeleton
+                      style={{ width: "100%", height: 160, borderRadius: 8 }}
+                    />
+                  </div>
+
+                  {/* small stat cards skeleton */}
+                  <div className="flex gap-4 justify-center mb-6">
+                    <div style={{ width: 220 }}>
+                      <Skeleton shape="text" style={{ width: "50%" }} />
+                      <Skeleton
+                        style={{
+                          width: "100%",
+                          height: 72,
+                          borderRadius: 8,
+                          marginTop: 8,
+                        }}
+                      />
+                    </div>
+                    <div style={{ width: 220 }}>
+                      <Skeleton shape="text" style={{ width: "50%" }} />
+                      <Skeleton
+                        style={{
+                          width: "100%",
+                          height: 72,
+                          borderRadius: 8,
+                          marginTop: 8,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* grid of chart skeletons (same layout as real grid) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[15px] gap-y-[30px]">
+                    {chartSlots.map((i) => (
+                      <div
+                        key={i}
+                        className="bg-white rounded-lg p-4 min-h-[300px]"
+                      >
+                        {/* card heading skeleton */}
+                        <Skeleton
+                          shape="text"
+                          style={{ width: "40%", height: 18 }}
+                        />
+                        <div className="mt-4">
+                          {/* large rectangle where the chart would be */}
+                          <Skeleton
+                            style={{
+                              width: "100%",
+                              height: 240,
+                              borderRadius: 8,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
