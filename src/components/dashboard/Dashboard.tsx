@@ -325,6 +325,7 @@ const Dashboard = () => {
 
     switch (chart.kind) {
       case "bar":
+        console.log("chart: ", chart)
         return (
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
             <div>
@@ -353,7 +354,7 @@ const Dashboard = () => {
             <BarChart
               seriesData={chart.payload.wizardRows.map(rowToObject)}
               chartType="column"
-              field="Valor_Venda"
+              field={chart.recommendation.metric}
               categoryField={chart.recommendation.groupBy}
               // mainTitle={chart.title}
               axisTitle={chart.recommendation.groupBy}

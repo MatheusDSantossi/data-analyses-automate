@@ -43,7 +43,6 @@ const BarChart = ({
     () => safeData.map((d) => (d?.[categoryField] ?? "N/A").toString()),
     [safeData, categoryField]
   );
-  // console.log("safeData", safeData);
 
   // const chartMaterialV4Colors: string[] = [
   //   "#3f51b5",
