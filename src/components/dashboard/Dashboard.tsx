@@ -205,7 +205,7 @@ const Dashboard = () => {
       // limit attempts
       const attempts = (current.regenerationAttempts ?? 0) + 1;
       if (attempts > 5) {
-        // show toast / warning
+        // TODO: show toast / warning
         console.warn("Regeneration limit reached for", chartId);
         return;
       }
@@ -220,6 +220,7 @@ const Dashboard = () => {
             c.id === chartId ? { ...c, regenerating: true } : c
           )
         );
+        // TODO: I also need to pass the previous recommendations to avoid repeats
 
         // call your reAnalyze function — it returns the new recs
         const recs = await reAnalyzeDataWithAI(current, attempts, parsedData, {
@@ -778,6 +779,30 @@ const Dashboard = () => {
                   </div>
 
                   {/* small stat cards skeleton */}
+                  <div className="flex gap-4 justify-center mb-6">
+                    <div style={{ width: 220 }}>
+                      <Skeleton shape="text" style={{ width: "50%" }} />
+                      <Skeleton
+                        style={{
+                          width: "100%",
+                          height: 72,
+                          borderRadius: 8,
+                          marginTop: 8,
+                        }}
+                      />
+                    </div>
+                    <div style={{ width: 220 }}>
+                      <Skeleton shape="text" style={{ width: "50%" }} />
+                      <Skeleton
+                        style={{
+                          width: "100%",
+                          height: 72,
+                          borderRadius: 8,
+                          marginTop: 8,
+                        }}
+                      />
+                    </div>
+                  </div>
                   <div className="flex gap-4 justify-center mb-6">
                     <div style={{ width: 220 }}>
                       <Skeleton shape="text" style={{ width: "50%" }} />
