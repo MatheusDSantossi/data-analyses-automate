@@ -55,8 +55,6 @@ Upload CSV / XLSX files, perform quick analyses, and build custom charts. UI pow
 - **Animation** (`@progress/kendo-react-animation`) - Components animation with:
   - `Reveal` - Animation component for revealing content with effects
 
-**NEW
-
 - **Tooltip** (`@progress/kendo-react-tooltip`) - Components tooltip with:
   - `Tooltip` - Tooltip component for showing some texts
 
