@@ -220,12 +220,16 @@ const Dashboard = () => {
             c.id === chartId ? { ...c, regenerating: true } : c
           )
         );
-        // TODO: I also need to pass the previous recommendations to avoid repeats
+        // TODO: I also need to pass the previous recommendations to avoid repeats 
+        // TODO: I just need to configure reAnalyseDataWithAI now
 
         // call your reAnalyze function — it returns the new recs
-        const recs = await reAnalyzeDataWithAI(current, attempts, parsedData, {
+        const recs = await reAnalyzeDataWithAI(current, attempts, parsedData, aiRecommendations, {
           sampleLimit: 50,
         });
+        // const recs = await reAnalyzeDataWithAI(current, attempts, parsedData, {
+        //   sampleLimit: 50,
+        // });
 
         if (!recs) {
           // nothing returned
