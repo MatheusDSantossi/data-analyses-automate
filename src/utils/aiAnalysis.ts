@@ -8,6 +8,7 @@ import { fuzzyMatchColumn } from "./fields";
 
 interface RegenerationState {
   originalChart: GeneratedChart;
+  aiPreviousRecommendations: any;
   columnSummary: any;
   regenerationAttempts: number;
 }
@@ -115,6 +116,7 @@ Return the JSON only.
 
 export function buildAIRegeneratePrompt({
   originalChart,
+  aiPreviousRecommendations,
   columnSummary,
   regenerationAttempts,
 }: RegenerationState) {
@@ -126,43 +128,71 @@ export function buildAIRegeneratePrompt({
       ? columnSummary.columns.map((c: any) => c.name)
       : [];
 
+  // Building a list of forbidden combos: "groupBy || metric"
+  const forbiddenCombos = (
+    aiPreviousRecommendations?.recommendedCharts || []
+  ).map((rc: any) => {
+    const g = rc.groupBy || "";
+    const m = rc.metric || "";
+    return `${g}||${m}`;
+  });
+
   const prompt = `
-    You are given:
-    1) The previous chart recommendation (JSON object).
-    2) A compact dataset column summary and the list of available column NAMES.
+      You are given:
+      1) The previous chart recommendation (JSON).
+      2) A compact column summary and the allowed column NAMES.
+      3) A list of forbidden "groupBy||metric" combinations the user already saw.
 
-    Return JSON ONLY with the same structure used in the original analysis:
-    {
-      "columns": [...],
-      "recommendedCharts": [ { "chartType": "bar|line|pie|donut|area", "groupBy": <columnName|null>, "metric": <columnName|null>, "aggregation": "sum|avg|count|none", "granularity": "month-year|year|day|none", "topN": <int|null>, "explain": <string> } ],
-      "recommendedCards": [ ... ]
-    }
+      **Task:** Return JSON ONLY. Suggest up to 3 *alternative* chart recommendations (same schema used earlier) that are **different** from the forbidden combinations. Prefer diversity: change the metric OR the groupBy OR the chartType. If you return a suggestion that matches a forbidden combo exactly, it will be discarded.
 
-    RULES:
-    - Use ONLY the provided column NAMES in the 'groupBy' and 'metric' fields. For example: "Categoria", "Valor_Venda".
-    - Do NOT invent new column names.
-    - Prefer suggestions that are *different* from the original chart's groupBy+metric combination.
-    - If you cannot find an alternative, return an empty array for recommendedCharts.
-    - Return up to 3 recommendedCharts and up to 3 recommendedCards.
-    - Output valid JSON and nothing else.
+      **Output JSON schema (exact):**
+      {
+        "columns": [ { "name": "...", "type": "numeric|categorical_or_string|date|unknown", ... } ],
+        "recommendedCharts": [
+          {
+            "chartType": "bar|line|pie|donut|area",
+            "groupBy": "<one of the provided column NAMES or null>",
+            "metric": "<one of the provided column NAMES or null>",
+            "aggregation": "sum|avg|count|none",
+            "granularity": "month-year|year|day|none",
+            "topN": <int|null>,
+            "score": <number between 0 and 1>, 
+            "explain": "<1-line rationale>"
+          }
+        ],
+        "recommendedCards": [ /* optional */ ]
+      }
 
-    Original chart (short):
-    ${JSON.stringify({
-      id: originalChart?.id,
-      kind: originalChart?.kind,
-      recommendation: originalChart?.recommendation,
-    })}
+      RULES:
+      - Use ONLY the provided column NAMES in 'groupBy' and 'metric'.
+      - Do NOT invent new column names.
+      - Avoid exact matches to any of the forbidden combos (see list below).
+      - Prefer suggestions that differ from the original chart, and rank them with 'score' (0..1).
+      - If no valid alternatives exist, return an empty array for recommendedCharts.
+      - Return valid JSON only, nothing else.
 
-    Available column NAMES:
-    ${JSON.stringify(columnNames)}
+      Original chart:
+      ${JSON.stringify({
+        id: originalChart?.id,
+        kind: originalChart?.kind,
+        recommendation: originalChart?.recommendation,
+      })}
 
-    Column summary (short):
-    ${JSON.stringify(columnSummary)}
+      Available column NAMES:
+      ${JSON.stringify(columnNames)}
 
-    Return only JSON, nothing else.
-    `;
+      Forbidden groupBy||metric combos:
+      ${JSON.stringify(forbiddenCombos)}
+
+      Column summary:
+      ${JSON.stringify(columnSummary)}
+
+      Return only JSON, nothing else.
+      `;
 
   if (regenerationAttempts > 5) return null;
+
+  console.log("Regeneration prompt: ", prompt);
 
   return prompt;
 }
@@ -214,6 +244,7 @@ export async function analyzeDataWithAI(
 
 export async function reAnalyzeDataWithAI(
   originalChart: GeneratedChart,
+  aiPreviousRecommendations: any,
   regenerationAttempts: number,
   rows: Record<string, any>[],
   options?: { sampleLimit?: number }
@@ -227,6 +258,7 @@ export async function reAnalyzeDataWithAI(
   const columnSummary = buildColumnSummary(sampleRows, sampleLimit);
   const prompt = buildAIRegeneratePrompt({
     originalChart,
+    aiPreviousRecommendations,
     columnSummary,
     regenerationAttempts,
   });
@@ -237,24 +269,59 @@ export async function reAnalyzeDataWithAI(
   const parsed = extractJson(raw); // your robust extractor
   if (!parsed) throw new Error("AI returned no JSON");
 
-  // parsed.recommendedCharts (existing)
-  const recChartsRaw = parsed.recommendedCharts ?? [];
+  // map and fuzzy match returned recs to real columns
   const colNames = Object.keys(sampleRows[0] || {});
+  const forbiddenCombos = (
+    aiPreviousRecommendations?.recommendedCharts || []
+  ).map((rc: any) => {
+    const g = rc.groupBy || "";
+    const m = rc.metric || "";
+    return `${g}||${m}`;
+  });
+
+  const recChartsRaw = parsed.recommendedCharts ?? [];
 
   // Trying to map AI returned recommendatiosn to real columns using fuzzy matching
-  const recChartsMapped = (recChartsRaw as any[]).map((rc) => {
-    const mapped: any = { ...rc };
+  const recChartsMapped = (recChartsRaw as any[])
+    .map((rc) => {
+      const mapped: any = { ...rc };
 
-    mapped._original = rc; // keep original suggestion for debugging
-    mapped.groupByMapped = fuzzyMatchColumn(rc.groupBy, colNames);
-    mapped.metricMapped = fuzzyMatchColumn(rc.metric, colNames);
+      mapped._original = rc; // keep original suggestion for debugging
+      mapped.groupByMapped = fuzzyMatchColumn(rc.groupBy, colNames);
+      mapped.metricMapped = fuzzyMatchColumn(rc.metric, colNames);
 
-    // prefer exact mapped names for later processing
-    if (mapped.groupByMapped) mapped.groupBy = mapped.groupByMapped;
-    if (mapped.metricByMapped) mapped.groupBy = mapped.metricByMapped;
+      // prefer exact mapped names for later processing
+      if (mapped.groupByMapped) mapped.groupBy = mapped.groupByMapped;
+      if (mapped.metricByMapped) mapped.groupBy = mapped.metricByMapped;
 
-    return mapped;
-  });
+      return mapped;
+    })
+    // remove any that did not map to allowed columns if they claimed a column
+    .filter((m) => {
+      const needsGroupOK = !!m.groupBy ? colNames.includes(m.groupBy) : true;
+      const needsMetricOK = !!m.metric ? colNames.includes(m.metric) : true;
+
+      return needsGroupOK && needsMetricOK;
+    });
+
+  // Remove duplicates against forbidden combos and dedupe among recs (keep highest score)
+  const unique: any[] = [];
+  const seen = new Set<string>();
+
+  recChartsMapped
+    .sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0)) // prefer higher score
+    .forEach((m) => {
+      if (forbiddenCombos.includes(m.combo)) return; // skip duplicates the user already saw
+      if (seen.has(m.combo)) return; // remove duplicates in returned list
+      seen.add(m.combo);
+      unique.push(m);
+    });
+
+  // If unique is empty, generate local fallback recommendations
+  let finalRecs: any[] = unique;
+  if (!finalRecs || finalRecs.length === 0) {
+    finalRecs = generateFallbackRecommendations(sampleRows, forbiddenCombos, 3);
+  }
 
   const recCards = parsed.recommendedCards ?? [];
 
@@ -263,11 +330,115 @@ export async function reAnalyzeDataWithAI(
 
   return {
     columns: parsed.columns,
-    recommendedCharts: recChartsMapped,
+    recommendedCharts: finalRecs,
+    // recommendedCharts: recChartsMapped,
     recommendedCards: recCards,
     cardPayloads,
     rawAIResponse: parsed,
   };
+}
+
+// picks candidate numeric metrics and categorical groupBy and produce combos not in forbidden
+export function generateFallbackRecommendations(
+  rows: Record<string, any>[],
+  forbiddenCombos: string[] = [],
+  limit = 3
+): any[] {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+
+  const first = rows[0];
+  const columns = Object.keys(first);
+
+  // simple heuristics:
+  // numeric candidates: columns with many numeric values (use buildColumSummary)
+  const numbericCols: string[] = [];
+  const categoricalCols: string[] = [];
+
+  for (const col of columns) {
+    let numericCount = 0;
+    let nonNull = 0;
+    for (let i = 0; i < Math.min(200, rows.length); i++) {
+      const v = rows[i][col];
+      if (v !== null && v !== undefined && String(v) !== "") {
+        nonNull++;
+        const n = Number(String(v).replace(",", "."));
+        if (!Number.isNaN(n)) numericCount++;
+      }
+    }
+    const numericRatio = nonNull === 0 ? 0 : numericCount / nonNull;
+    if (numericRatio > 0.6) numbericCols.push(col);
+    else categoricalCols.push(col);
+  }
+
+  // rank numeric cols by total sum (desc) as heuristic for "interesting metrics"
+  const numericScores = numbericCols.map((c) => {
+    let sum = 0;
+    let cnt = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const v = Number(String(rows[i][c] ?? "").replace(",", "."));
+      if (!Number.isNaN(v)) {
+        sum += v;
+        cnt++;
+      }
+    }
+
+    return { col: c, sum, cnt };
+  });
+  numericScores.sort((a, b) => b.sum - a.sum);
+
+  // Rank categorical by unique sample count
+  const categoricalScores = categoricalCols.map((c) => {
+    const s = new Set<string>();
+    for (let i = 0; i < Math.min(500, rows.length); i++)
+      s.add(String(rows[i][c] ?? ""));
+    return { col: c, distinct: s.size };
+  });
+
+  categoricalScores.sort((a, b) => b.distinct - a.distinct);
+
+  const recs: any[] = [];
+
+  // try to create combos: top categorcal x top numeric
+  for (const cat of categoricalScores.slice(0, 10)) {
+    for (const num of numericScores.slice(0, 10)) {
+      const combo = `${cat.col}||${num.col}`;
+
+      if (forbiddenCombos.includes(combo)) continue;
+
+      if (cat.col === num.col) continue;
+
+      recs.push({
+        chartType: "bar",
+        groupBy: cat.col,
+        metric: num.col,
+        aggregation: "sum",
+        granularity: "none",
+        topN: 8,
+        score: 0.5,
+        explain: `Auto fallback: ${num.col} summed by ${cat.col} because ${cat.col} has ${cat.distinct} distinct values.`,
+        _fallback: true,
+      });
+      if (recs.length >= limit) break;
+    }
+    if (recs.length >= limit) break;
+  }
+
+  // if still none, produce counts of rows as final fallback
+  if (recs.length === 0) {
+    recs.push({
+      chartType: "bar",
+      groupBy: categoricalScores[0]?.col ?? null,
+      metric: null,
+      aggregation: "count",
+      granularity: "none",
+      topN: 8,
+      score: 0.4,
+      explain: "Fallback: count of rows grouped by top categorical column.",
+      _fallback: true,
+    });
+  }
+
+  return recs;
 }
 
 export function computeCardValues(

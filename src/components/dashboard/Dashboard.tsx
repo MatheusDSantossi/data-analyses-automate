@@ -109,7 +109,7 @@ const Dashboard = () => {
         const arrayBuffer = await file.arrayBuffer();
         // Detect file type by extension
         const filename = file.name.toLowerCase();
-        
+
         if (filename.endsWith(".csv")) {
           // csv -> read as text
           const text = new TextDecoder().decode(arrayBuffer);
@@ -121,19 +121,19 @@ const Dashboard = () => {
           console.log("arrayBuffer: ", arrayBuffer);
 
           await workbook.xlsx.load(arrayBuffer); // it returns a load promise
-          
+
           console.log("workbook: ", workbook);
           if (!workbook.worksheets || workbook.worksheets.length === 0) {
             navigate("/");
             throw new Error("No worksheets found in workbook");
           }
-          
+
           const sheet = workbook.worksheets[0];
-          
+
           console.log("sheet: ", sheet);
           // Read header from first row
           const headerRow: any = sheet.getRow(1);
-          
+
           // headerRow.calues is 1-based: [, "col1", "col2", ...]
           const headers = (headerRow.values || [])
             .slice(1)
@@ -220,13 +220,21 @@ const Dashboard = () => {
             c.id === chartId ? { ...c, regenerating: true } : c
           )
         );
-        // TODO: I also need to pass the previous recommendations to avoid repeats 
+        // TODO: I also need to pass the previous recommendations to avoid repeats
         // TODO: I just need to configure reAnalyseDataWithAI now
 
+        console.log("aiRecommendations: ", aiRecommendations);
+
         // call your reAnalyze function — it returns the new recs
-        const recs = await reAnalyzeDataWithAI(current, attempts, parsedData, aiRecommendations, {
-          sampleLimit: 50,
-        });
+        const recs = await reAnalyzeDataWithAI(
+          current,
+          aiRecommendations,
+          attempts,
+          parsedData,
+          {
+            sampleLimit: 50,
+          }
+        );
         // const recs = await reAnalyzeDataWithAI(current, attempts, parsedData, {
         //   sampleLimit: 50,
         // });
@@ -330,7 +338,7 @@ const Dashboard = () => {
 
     switch (chart.kind) {
       case "bar":
-        console.log("chart: ", chart)
+        console.log("chart: ", chart);
         return (
           <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
             <div>
@@ -739,9 +747,13 @@ const Dashboard = () => {
                     )}
 
                     {c.cardType === "minMax" && (
-                      <div>
-                        <div>Min: {fmtNumber(c.value.min)}</div>
-                        <div>Max: {fmtNumber(c.value.max)}</div>
+                      <div className="text-black">
+                        <div>
+                          <span className="font-bold">Min:</span> {fmtNumber(c.value.min)}
+                        </div>
+                        <div>
+                          <span className="font-bold">Max:</span> {fmtNumber(c.value.max)}
+                        </div>
                       </div>
                     )}
 
