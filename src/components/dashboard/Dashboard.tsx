@@ -313,7 +313,7 @@ const Dashboard = () => {
         setAiBusy(false);
       }
     },
-    [generatedCharts, parsedData]
+    [generatedCharts, parsedData, aiRecommendations]
   );
 
   useEffect(() => {
@@ -325,9 +325,10 @@ const Dashboard = () => {
   }, [parsedData, analyzeAll]);
 
   const ChartRenderer: React.FC<{ chart: GeneratedChart }> = ({ chart }) => {
-    if (!chart.valid) {
+    console.log("chart valid: ", chart);
+    if (!chart.valid && chart.kind !== "line") {
       return (
-        <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+        <div className="bg-white shadow-md rounded-lg p-4 min-h-[300px]">
           <h4 className="font-medium">{chart.title}</h4>
           <p className="text-sm text-red-600">
             Failed to create chart: {chart.error}
@@ -338,9 +339,9 @@ const Dashboard = () => {
 
     switch (chart.kind) {
       case "bar":
-        console.log("chart: ", chart);
+        
         return (
-          <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+          <div className="bg-white shadow-md rounded-lg p-4 min-h-[300px]">
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
@@ -377,7 +378,7 @@ const Dashboard = () => {
         );
       case "pie":
         return (
-          <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+          <div className="bg-white rounded-lg shadow-md p-4 min-h-[300px]">
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
@@ -410,7 +411,7 @@ const Dashboard = () => {
         );
       case "donut":
         return (
-          <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+          <div className="bg-white rounded-lg shadow-md p-4 min-h-[300px]">
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
@@ -443,7 +444,7 @@ const Dashboard = () => {
         );
       case "line":
         return (
-          <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+          <div className="bg-white rounded-lg shadow-md p-4 min-h-[300px]">
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
@@ -465,8 +466,8 @@ const Dashboard = () => {
             </div>
             <h4 className="mb-2 font-medium text-black">{chart.title}</h4>
             <LineChart
-              categories={chart.payload.categories}
-              seriesData={chart.payload.series}
+              categories={chart.payload?.categories ?? ""}
+              seriesData={chart.payload?.series}
               // mainTitle={chart.title}
               axisTitle={
                 chart.recommendation.groupBy ?? chart.recommendation.metric
@@ -477,7 +478,7 @@ const Dashboard = () => {
         );
       case "area":
         return (
-          <div className="bg-white rounded-lg shadow-sm p-4 min-h-[300px]">
+          <div className="bg-white rounded-lg shadow-md p-4 min-h-[300px]">
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
@@ -584,7 +585,7 @@ const Dashboard = () => {
   // rendering helper for uploaded chart card
   const UploadedChartCard = ({ u }: { u: UploadedChart }) => {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-3 max-h-[420px] flex flex-col">
+      <div className="bg-white rounded-lg shadow-md p-3 max-h-[420px] flex flex-col">
         <div className="flex items-start justify-between">
           <h4 className="text-sm font-medium truncate max-w-[70%]">{u.name}</h4>
           <div className="flex gap-2 items-center">
@@ -714,7 +715,7 @@ const Dashboard = () => {
               {aiCards?.map((c) => (
                 <div
                   key={c.id}
-                  className="flex  flex-col justify-center bg-white rounded-lg shadow-sm p-3"
+                  className="flex  flex-col justify-center bg-white rounded-lg shadow-md p-3"
                 >
                   <h4 className="text-sm font-medium text-black">{c.label}</h4>
                   <div className="mt-3">
@@ -849,7 +850,7 @@ const Dashboard = () => {
                     {chartSlots.map((i) => (
                       <div
                         key={i}
-                        className="bg-white rounded-lg p-4 min-h-[300px]"
+                        className="bg-white rounded-lg p-4 min-h-[300px] shadow-md"
                       >
                         {/* card heading skeleton */}
                         <Skeleton
