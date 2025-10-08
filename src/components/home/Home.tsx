@@ -59,7 +59,7 @@ const Home = () => {
   return (
     <div>
       <Reveal className="w-full">
-        <div className="mt-10" key={key}>
+        <div className="relative mt-10 left-32" key={key}>
           <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
         </div>
         <main className="flex flex-col justify-center items-center h-screen">
@@ -77,7 +77,7 @@ const Home = () => {
             {/* <label htmlFor="data_file" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Select the file!!</label> */}
 
             <Input
-              className="block w-full text-sm
+              className="block shadow-2xl! w-full text-sm
               file:mr-4 file:py-2 file:px-3
               file:border-0
               file:text-sm file:font-semibold
