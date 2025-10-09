@@ -1,16 +1,133 @@
 // src/utils/aiAnalysis.ts
 import { getResponseForGivenPrompt } from "./GeminiFunctions";
-import { aggregateRowsToWizardData } from "./transformForWizard";
-import { aggregateByTimeSeries } from "./aggregation"; // your earlier helper
 import { toNumber } from "./toNumber";
 import type { GeneratedChart } from "../components/dashboard/Dashboard";
 import { fuzzyMatchColumn } from "./fields";
+import { detectDateColumns } from "./detectDateCols";
 
 interface RegenerationState {
   originalChart: GeneratedChart;
   aiPreviousRecommendations: any;
   columnSummary: any;
   regenerationAttempts: number;
+}
+
+// Helper to normalize and convert invalid line/area recs
+export function processRecommendedCharts(
+  recRaw: any[],
+  sampleRows: Record<string, any>[],
+  forbiddenCombos: string[] = [],
+  maxResults = 3
+) {
+  const colNames = Object.keys(sampleRows[0] || {});
+  const dateCols = detectDateColumns(sampleRows);
+  const hasDate = dateCols.length > 0;
+
+  // first fuzzy-map suggested fields to real columns (if returned raw names)
+  const mapped = (recRaw || []).map((rc) => {
+    const copy = { ...rc };
+    if (rc.grouBy) {
+      const gm = fuzzyMatchColumn(rc.groupBy, colNames);
+      if (gm) copy.groupBy = gm;
+    }
+    if (rc.metric) {
+      const mm = fuzzyMatchColumn(rc.metric, colNames);
+      if (mm) copy.metric = mm;
+    }
+    // compute normalized combo
+    copy.combo = `${copy.groupBy ?? ""} || ${copy.metric ?? ""}`;
+    return copy;
+  });
+
+  // drop any rec that uses columns not present after mapping
+  const validMapped = mapped.filter((m) => {
+    const okGroup = !m.groupBy || colNames.includes(m.groupBy);
+    const okMetric = !m.metric || colNames.includes(m.metric);
+    return okGroup && okMetric;
+  });
+
+  // Now convert or reject time-series if no date columns
+  const adjusted: any[] = [];
+  for (const m of validMapped) {
+    // if m.chartType is time-series but we have no date col => convert
+    if ((m.chartType === "line" || m.chartType === "area") && !hasDate) {
+      // prefer converting to donut/pie if groupBy exists
+      if (m.groupBy) {
+        // pick donut for variety
+        adjusted.push({
+          ...m,
+          chartType: "donut",
+          explain:
+            (m.explain ?? "") +
+            "(converted from time-series to donut due missing date column",
+        });
+        continue;
+      }
+      // if not groupBy, let's try to pick a categorical to group by
+      const fallback = generateFallbackRecommendations(
+        sampleRows,
+        forbiddenCombos,
+        1
+      )[0];
+
+      if (fallback) {
+        adjusted.push({
+          ...fallback,
+          explain:
+            (m.explain ?? "") +
+            " (converted because no date column); fallback used!",
+        });
+        continue;
+      }
+      // as last resort, let's skip it
+      continue;
+    }
+    // if this combo matches a forbidden combo, here we skip it
+    if (forbiddenCombos.includes(m.combo)) continue;
+
+    adjusted.push(m);
+  }
+  // Lt's dedupe combos to get a higher score (if score presents)
+  const deduped: any[] = [];
+  const seen = new Set<string>();
+  adjusted
+    .sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0))
+    .forEach((m) => {
+      if (seen.has(m.combo)) return;
+      seen.add(m.combo);
+      deduped.push(m);
+    });
+
+  // Let's ensure some diversity, if all charts are bar/line...
+  const onlyBarLine =
+    deduped.length > 0 &&
+    deduped.every((d) => d.chartType === "bar" || d.chartType === "line");
+
+  if (onlyBarLine) {
+    // try convert the first eligible with groupBy to 'donut'
+    for (let i = 0; i < deduped.length; i++) {
+      const c = deduped[i];
+      if (c.groupBy) {
+        deduped[i] = {
+          ...c,
+          charType: "donut",
+          explain: (c.explain ?? "") + "(converted to donut for variety)",
+        };
+        break;
+      }
+    }
+  }
+
+  // If after all this we have no results, fallback to deterministic suggestions
+  let final = deduped.slice(0, maxResults);
+  if (final.length === 0) {
+    final = generateFallbackRecommendations(
+      sampleRows,
+      forbiddenCombos,
+      maxResults
+    );
+  }
+  return { recommendedCharts: final, dateCols, hasDate };
 }
 
 // Build a small per-column summary from sample rows
@@ -65,52 +182,62 @@ export function buildColumnSummary(
 
 // Build a strict JSON-only prompt. Ask model to return EXACT JSON with no extra narration.
 export function buildAIPrompt(columnSummary: any, sampleSize = 50) {
+  const dateColumns = detectDateColumns(columnSummary, sampleSize);
+
+  console.log("Detected date columns: ", dateColumns);
+
   const prompt = `
-You are given a compact summary of a dataset (column names with type hints and small sample values). DO NOT add any text outside the JSON. Return strictly a JSON object that follows this exact schema:
+    You are given a compact summary of a dataset (column names with type hints and small sample values). DO NOT add any text outside the JSON. Return strictly a JSON object that follows this exact schema:
 
-{
-  "columns": [
-    { "name": <string>, "type": <"numeric"|"categorical"|"date"|"unknown">, "sample": [<values>], "uniqueSampleCount": <int>, "numericSummary": { "min": <number|null>, "max": <number|null> } | null }
-  ],
-  "recommendedCharts": [
     {
-      "chartType": <"bar"|"donut"|"pie"|"line"|"area">,
-      "groupBy": <string|null>,            // column name to group by, null if not applicable
-      "metric": <string|null>,             // numeric metric column
-      "aggregation": <"sum"|"avg"|"count"|"none">,
-      "granularity": <"day"|"month-year"|"year"|"none">,
-      "topN": <int|null>,
-      "explain": <string>                  // short explanation (1-2 sentences)
+      "columns": [
+        { "name": <string>, "type": <"numeric"|"categorical"|"date"|"unknown">, "sample": [<values>], "uniqueSampleCount": <int>, "numericSummary": { "min": <number|null>, "max": <number|null> } | null }
+      ],
+      "recommendedCharts": [
+        {
+          "chartType": <"bar"|"donut"|"pie"|"line"|"area">,
+          "groupBy": <string|null>,            // column name to group by, null if not applicable
+          "metric": <string|null>,             // numeric metric column
+          "aggregation": <"sum"|"avg"|"count"|"none">,
+          "granularity": <"day"|"month-year"|"year"|"none">,
+          "topN": <int|null>,
+          "explain": <string>                  // short explanation (1-2 sentences)
+        }
+      ],
+      "recommendedCards": [
+        {
+          "cardType": <"metric"|"topCategory"|"count"|"avg"|"minMax">,
+          "field": <string|null>,            // column name used for metric or category; null if not applicable (e.g. count)
+          "aggregation": <"sum"|"avg"|"count"|null>,
+          "label": <string>,                 // short display label for the card title
+          "format": <"currency"|"number"|"percentage"|"text">,
+          "topN": <int|null>,                // optional, for topCategory
+          "explain": <string>
+        }
+      ]
+
     }
-  ],
-  "recommendedCards": [
-    {
-      "cardType": <"metric"|"topCategory"|"count"|"avg"|"minMax">,
-      "field": <string|null>,            // column name used for metric or category; null if not applicable (e.g. count)
-      "aggregation": <"sum"|"avg"|"count"|null>,
-      "label": <string>,                 // short display label for the card title
-      "format": <"currency"|"number"|"percentage"|"text">,
-      "topN": <int|null>,                // optional, for topCategory
-      "explain": <string>
-    }
-  ]
 
-}
+    Now analyze the supplied column metadata and suggest up to 4 charts and up to 4 small dashboard cards that would be useful for a quick glance (e.g., total sales, average order value, number of orders, top categories). Do NOT compute exact numbers — only return the card specs (field, aggregation, label, format, optional topN) so the frontend will compute the values on the real data. Prefer 'sum' for monetary-like columns.
 
-Now analyze the supplied column metadata and suggest up to 4 charts and up to 4 small dashboard cards that would be useful for a quick glance (e.g., total sales, average order value, number of orders, top categories). Do NOT compute exact numbers — only return the card specs (field, aggregation, label, format, optional topN) so the frontend will compute the values on the real data. Prefer 'sum' for monetary-like columns.
+    Here is the column summary (JSON):
+    ${JSON.stringify(columnSummary)}
 
-Here is the column summary (JSON):
-${JSON.stringify(columnSummary)}
+    Available date column NAMES (if any): ${JSON.stringify(dateColumns)}
 
-RULES:
-- Output only valid JSON that strictly conforms to the schema above.
-- Provide up to 4 recommended chart objects, ordered by importance.
-- For numeric metrics prefer "sum" for totals (sales) and "avg" if data looks like rates.
-- For time-series use granularity "month-year" by default when dates are present.
-- If you cannot decide, use null values where appropriate.
+    RULES:
+    - Output only valid JSON that strictly conforms to the schema above.
+    - Provide up to 4 recommended chart objects, ordered by importance.
+    - For numeric metrics prefer "sum" for totals (sales) and "avg" if data looks like rates.
+    - For time-series use granularity "month-year" by default when dates are present.
+    - If you cannot decide, use null values where appropriate.
+    - Only recommend line/area (time-series) charts if one or more of the date columns above exists.
+    - If no date columns exist, DO NOT return any chart with "chartType": "line" or "area".
 
-Return the JSON only.
-`;
+    Diversity rule: Prefer a diverse set of chart types. Return at least one chart that is NOT "bar" or "line" when the data supports it (for example: pie/donut for single metric by category, area for time series if dates exist). Provide a 'score' for each suggested chart so the frontend can prefer high-quality suggestions.
+
+    Return the JSON only.
+    `;
   return prompt;
 }
 
@@ -136,6 +263,8 @@ export function buildAIRegeneratePrompt({
     const m = rc.metric || "";
     return `${g}||${m}`;
   });
+
+  const dateColumns = detectDateColumns(columnSummary);
 
   const prompt = `
       You are given:
@@ -186,6 +315,19 @@ export function buildAIRegeneratePrompt({
 
       Column summary:
       ${JSON.stringify(columnSummary)}
+
+      Available date column NAMES (if any): ${JSON.stringify(dateColumns)}
+
+      RULES:
+    - Output only valid JSON that strictly conforms to the schema above.
+    - Provide up to 4 recommended chart objects, ordered by importance.
+    - For numeric metrics prefer "sum" for totals (sales) and "avg" if data looks like rates.
+    - For time-series use granularity "month-year" by default when dates are present.
+    - If you cannot decide, use null values where appropriate.
+    - Only recommend line/area (time-series) charts if one or more of the date columns above exists.
+    - If no date columns exist, DO NOT return any chart with "chartType": "line" or "area".
+
+    Diversity rule: Prefer a diverse set of chart types. Return at least one chart that is NOT "bar" or "line" when the data supports it (for example: pie/donut for single metric by category, area for time series if dates exist). Provide a 'score' for each suggested chart so the frontend can prefer high-quality suggestions.
 
       Return only JSON, nothing else.
       `;
@@ -298,8 +440,8 @@ export async function reAnalyzeDataWithAI(
     })
     // remove any that did not map to allowed columns if they claimed a column
     .filter((m) => {
-      const needsGroupOK = !!m.groupBy ? colNames.includes(m.groupBy) : true;
-      const needsMetricOK = !!m.metric ? colNames.includes(m.metric) : true;
+      const needsGroupOK = m.groupBy ? colNames.includes(m.groupBy) : true;
+      const needsMetricOK = m.metric ? colNames.includes(m.metric) : true;
 
       return needsGroupOK && needsMetricOK;
     });

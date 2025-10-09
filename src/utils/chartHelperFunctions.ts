@@ -21,30 +21,6 @@ export function mapRecToGeneratedChart(
 
   console.log("rec inside chart helper: ", rec);
 
-  /**
-  * RETURN TEST
-  * {
-    "chartType": "bar",
-    "groupBy": "Categoria",
-    "metric": "Valor_Venda",
-    "aggregation": "sum",
-    "granularity": "none",
-    "topN": null,
-    "explain": "Bar chart showing the total sales value for each product category.",
-    "_original": {
-        "chartType": "bar",
-        "groupBy": "Categoria",
-        "metric": "Valor_Venda",
-        "aggregation": "sum",
-        "granularity": "none",
-        "topN": null,
-        "explain": "Bar chart showing the total sales value for each product category."
-    },
-    "groupByMapped": "Categoria",
-    "metricMapped": "Valor_Venda",
-    "regenerationAttempts": 1
-}
-  */
 
   //   BAR / PIE / DONUT
   if (kind === "bar" || kind === "pie" || kind === "donut") {
