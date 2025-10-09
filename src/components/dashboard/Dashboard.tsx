@@ -11,7 +11,11 @@ import { Skeleton } from "@progress/kendo-react-indicators";
 import "@progress/kendo-theme-default/dist/all.css";
 import { Reveal } from "@progress/kendo-react-animation";
 import { Tooltip } from "@progress/kendo-react-tooltip";
-import { analyzeDataWithAI, reAnalyzeDataWithAI } from "../../utils/aiAnalysis";
+import {
+  analyzeDataWithAI,
+  processRecommendedCharts,
+  reAnalyzeDataWithAI,
+} from "../../utils/aiAnalysis";
 import { FaUpload, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
 import { GrUpdate } from "react-icons/gr";
 import { mapRecToGeneratedChart } from "../../utils/chartHelperFunctions";
@@ -177,9 +181,22 @@ const Dashboard = () => {
     setAiBusy(true);
     try {
       const recs = await analyzeDataWithAI(parsedData, { sampleLimit: 50 });
+      const sampleRows = parsedData.slice(0, Math.min(200, parsedData.length));
       setAiRecommendations(recs);
       if (recs.cardPayloads) setAiCards(recs.cardPayloads);
+      const forbiddenCombos = (recs.recommendedCharts || []).map(
+        (rc) => `${rc.groupBy ?? ""}|| ${rc.metric ?? ""}`
+      );
+      const { recommendedCharts: finalRecs } = processRecommendedCharts(
+        recs.recommendedCharts || [],
+        sampleRows,
+        forbiddenCombos,
+        4
+      );
 
+      // const mapped: GeneratedChart[] = (finalRecs?.recommendedCharts || []).map(
+      //   (rec: any, idx: number) => mapRecToGeneratedChart(rec, idx, parsedData)
+      // );
       const mapped: GeneratedChart[] = (recs.recommendedCharts || []).map(
         (rec: any, idx: number) => mapRecToGeneratedChart(rec, idx, parsedData)
       );
@@ -339,7 +356,6 @@ const Dashboard = () => {
 
     switch (chart.kind) {
       case "bar":
-        
         return (
           <div className="bg-white shadow-md rounded-lg p-4 min-h-[300px]">
             <div>
@@ -750,10 +766,12 @@ const Dashboard = () => {
                     {c.cardType === "minMax" && (
                       <div className="text-black">
                         <div>
-                          <span className="font-bold">Min:</span> {fmtNumber(c.value.min)}
+                          <span className="font-bold">Min:</span>{" "}
+                          {fmtNumber(c.value.min)}
                         </div>
                         <div>
-                          <span className="font-bold">Max:</span> {fmtNumber(c.value.max)}
+                          <span className="font-bold">Max:</span>{" "}
+                          {fmtNumber(c.value.max)}
                         </div>
                       </div>
                     )}
