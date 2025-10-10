@@ -13,6 +13,7 @@ import { Reveal } from "@progress/kendo-react-animation";
 import { Tooltip } from "@progress/kendo-react-tooltip";
 import {
   analyzeDataWithAI,
+  buildColumnSummary,
   processRecommendedCharts,
   reAnalyzeDataWithAI,
 } from "../../utils/aiAnalysis";
@@ -22,6 +23,7 @@ import { mapRecToGeneratedChart } from "../../utils/chartHelperFunctions";
 import { fuzzyMatchColumn } from "../../utils/fields";
 import PieChart from "./charts/PieChart";
 import AreaChart from "./charts/AreaChart";
+import { detectDateColumns } from "../../utils/detectDateCols";
 
 type UploadedChart = {
   id: string;
@@ -64,6 +66,9 @@ const Dashboard = () => {
   const [aiCards, setAiCards] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState<any | null>(null);
+  const [aiPreviousRecommendations, setAiPreviousRecommendations] = useState<
+    any | null
+  >(null);
   const [aiBusy, setAiBusy] = useState(false);
   // const [loadingProgress, setLoadingProgress] = useState<number | undefined>(
   //   undefined
@@ -180,12 +185,26 @@ const Dashboard = () => {
     if (!parsedData || parsedData.length === 0) return;
     setAiBusy(true);
     try {
-      const recs = await analyzeDataWithAI(parsedData, { sampleLimit: 50 });
       const sampleRows = parsedData.slice(0, Math.min(200, parsedData.length));
+
+      // build column summary + detect dates BEFORE calling AI (so prompt can includes them)
+      const columnSummary = buildColumnSummary(sampleRows, sampleRows.length);
+      const dateCols = detectDateColumns(sampleRows);
+
+      console.log("dateCols AI ALL: ", dateCols);
+
+      const recs = await analyzeDataWithAI(
+        parsedData,
+        { sampleLimit: 50, columnSummary },
+        dateCols
+      );
+
       setAiRecommendations(recs);
+      setAiPreviousRecommendations(recs);
       if (recs.cardPayloads) setAiCards(recs.cardPayloads);
+
       const forbiddenCombos = (recs.recommendedCharts || []).map(
-        (rc) => `${rc.groupBy ?? ""}|| ${rc.metric ?? ""}`
+        (rc: any) => `${rc.groupBy ?? ""}|| ${rc.metric ?? ""}`
       );
       const { recommendedCharts: finalRecs } = processRecommendedCharts(
         recs.recommendedCharts || [],
@@ -194,12 +213,13 @@ const Dashboard = () => {
         4
       );
 
-      // const mapped: GeneratedChart[] = (finalRecs?.recommendedCharts || []).map(
+      const mapped: GeneratedChart[] = (finalRecs || []).map(
+        (rec: any, idx: number) =>
+          mapRecToGeneratedChart(rec, idx, parsedData, dateCols)
+      );
+      // const mapped: GeneratedChart[] = (recs.recommendedCharts || []).map(
       //   (rec: any, idx: number) => mapRecToGeneratedChart(rec, idx, parsedData)
       // );
-      const mapped: GeneratedChart[] = (recs.recommendedCharts || []).map(
-        (rec: any, idx: number) => mapRecToGeneratedChart(rec, idx, parsedData)
-      );
 
       setGeneratedCharts(mapped);
     } catch (err) {
@@ -237,15 +257,13 @@ const Dashboard = () => {
             c.id === chartId ? { ...c, regenerating: true } : c
           )
         );
-        // TODO: I also need to pass the previous recommendations to avoid repeats
-        // TODO: I just need to configure reAnalyseDataWithAI now
 
         console.log("aiRecommendations: ", aiRecommendations);
 
         // call your reAnalyze function — it returns the new recs
         const recs = await reAnalyzeDataWithAI(
           current,
-          aiRecommendations,
+          aiPreviousRecommendations,
           attempts,
           parsedData,
           {

@@ -8,7 +8,8 @@ import { aggregateRowsToWizardData } from "./transformForWizard";
 export function mapRecToGeneratedChart(
   rec: any,
   idx: number,
-  parsedData: Record<string, any>[]
+  parsedData: Record<string, any>[],
+  dateCols: string [] = []
 ): GeneratedChart {
   const id = rec.id ?? `ai-${idx}-${rec.chartType}-${rec.groupBy ?? "nogroup"}`;
   const kind = rec.chartType as ChartKind;
@@ -66,8 +67,8 @@ export function mapRecToGeneratedChart(
   if (kind === "line" || kind === "area") {
     const dateField =
       rec.dateField ||
-      (parsedData[0].Data_Pedido
-        ? "Data_Pedido"
+      (dateCols && dateCols.length
+        ? dateCols[0]
         : Object.keys(parsedData[0]).find((k) => /date|data|dt/i.test(k)));
 
     if (

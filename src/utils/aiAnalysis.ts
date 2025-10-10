@@ -10,6 +10,7 @@ interface RegenerationState {
   aiPreviousRecommendations: any;
   columnSummary: any;
   regenerationAttempts: number;
+  dateCols: string[];
 }
 
 // Helper to normalize and convert invalid line/area recs
@@ -181,10 +182,15 @@ export function buildColumnSummary(
 }
 
 // Build a strict JSON-only prompt. Ask model to return EXACT JSON with no extra narration.
-export function buildAIPrompt(columnSummary: any, sampleSize = 50) {
-  const dateColumns = detectDateColumns(columnSummary, sampleSize);
+export function buildAIPrompt(
+  columnSummary: any,
+  sampleSize = 50,
+  dateCols: string[] = []
+) {
+  // const sampleRows = parsedData.slice(0, Math.min(200, parsedData.length));
+  // const dateColumns = detectDateColumns(sampleRows, sampleSize);
 
-  console.log("Detected date columns: ", dateColumns);
+  console.log("Detected date columns BUILD AI: ", dateCols);
 
   const prompt = `
     You are given a compact summary of a dataset (column names with type hints and small sample values). DO NOT add any text outside the JSON. Return strictly a JSON object that follows this exact schema:
@@ -223,7 +229,7 @@ export function buildAIPrompt(columnSummary: any, sampleSize = 50) {
     Here is the column summary (JSON):
     ${JSON.stringify(columnSummary)}
 
-    Available date column NAMES (if any): ${JSON.stringify(dateColumns)}
+    Available date column NAMES (if any): ${JSON.stringify(dateCols)}
 
     RULES:
     - Output only valid JSON that strictly conforms to the schema above.
@@ -246,6 +252,7 @@ export function buildAIRegeneratePrompt({
   aiPreviousRecommendations,
   columnSummary,
   regenerationAttempts,
+  dateCols,
 }: RegenerationState) {
   // console.log("original chart: ", JSON.stringify(originalChart));
 
@@ -264,7 +271,10 @@ export function buildAIRegeneratePrompt({
     return `${g}||${m}`;
   });
 
-  const dateColumns = detectDateColumns(columnSummary);
+  // const sampleRows = rows.slice(0, Math.min(200, rows.length));
+  // const dateColumns = detectDateColumns(sampleRows);
+
+  console.log("dateCols: AI REGE: ", dateCols);
 
   const prompt = `
       You are given:
@@ -316,7 +326,7 @@ export function buildAIRegeneratePrompt({
       Column summary:
       ${JSON.stringify(columnSummary)}
 
-      Available date column NAMES (if any): ${JSON.stringify(dateColumns)}
+      Available date column NAMES (if any): ${JSON.stringify(dateCols)}
 
       RULES:
     - Output only valid JSON that strictly conforms to the schema above.
@@ -354,7 +364,8 @@ export function extractJson(text: string) {
  */
 export async function analyzeDataWithAI(
   rows: Record<string, any>[],
-  options?: { sampleLimit?: number }
+  options: { sampleLimit?: number; columnSummary?: any } = {},
+  dateCols?: string[]
 ) {
   const sampleLimit = options?.sampleLimit ?? 200;
   const sampleRows = Array.isArray(rows)
@@ -362,8 +373,12 @@ export async function analyzeDataWithAI(
     : [];
   if (sampleRows.length === 0) throw new Error("No rows to analyze");
 
-  const columnSummary = buildColumnSummary(sampleRows, sampleLimit);
-  const prompt = buildAIPrompt(columnSummary, sampleRows.length);
+  // const columnSummary = buildColumnSummary(sampleRows, sampleLimit);
+  const prompt = buildAIPrompt(
+    options.columnSummary,
+    sampleRows.length,
+    dateCols
+  );
 
   const raw = await getResponseForGivenPrompt(prompt); // returns string
   const parsed = extractJson(raw); // your robust extractor
@@ -389,7 +404,8 @@ export async function reAnalyzeDataWithAI(
   aiPreviousRecommendations: any,
   regenerationAttempts: number,
   rows: Record<string, any>[],
-  options?: { sampleLimit?: number }
+  options?: { sampleLimit?: number },
+  dateCols: string[] = []
 ) {
   const sampleLimit = options?.sampleLimit ?? 200;
   const sampleRows = Array.isArray(rows)
@@ -403,6 +419,7 @@ export async function reAnalyzeDataWithAI(
     aiPreviousRecommendations,
     columnSummary,
     regenerationAttempts,
+    dateCols,
   });
 
   if (!prompt) return null;
