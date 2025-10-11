@@ -5,7 +5,7 @@ import ExcelJS from "exceljs";
 import BarChart from "./charts/BarChart";
 import LineChart from "./charts/LineChart";
 import DonutChart from "./charts/DonutChart";
-import { FaPencilAlt } from "react-icons/fa";
+import { MdAddChart } from "react-icons/md";
 import ProgressBarComp from "../../ui/ProgressBarComp";
 import { Skeleton } from "@progress/kendo-react-indicators";
 import "@progress/kendo-theme-default/dist/all.css";
@@ -24,6 +24,7 @@ import { fuzzyMatchColumn } from "../../utils/fields";
 import PieChart from "./charts/PieChart";
 import AreaChart from "./charts/AreaChart";
 import { detectDateColumns } from "../../utils/detectDateCols";
+import CloseButton from "../../ui/CloseButton";
 
 type UploadedChart = {
   id: string;
@@ -189,6 +190,8 @@ const Dashboard = () => {
 
       // build column summary + detect dates BEFORE calling AI (so prompt can includes them)
       const columnSummary = buildColumnSummary(sampleRows, sampleRows.length);
+
+      console.log("sampleRows: ", sampleRows);
       const dateCols = detectDateColumns(sampleRows);
 
       console.log("dateCols AI ALL: ", dateCols);
@@ -692,10 +695,26 @@ const Dashboard = () => {
     <div className="w-full p-6 mt-10">
       <Reveal className="w-full">
         <div className="" key={key}>
-          <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
+          <div className="flex flex-row justify-between">
+            <img
+              className="h-10"
+              src="/src/assets/logo.png"
+              alt="System Logo"
+            />
+            <div className="flex relative left-0">
+              <CloseButton
+                buttonContent="Close"
+                onClick={() => {
+                  navigate("/");
+                }}
+              />
+            </div>
+          </div>
           <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
-          <p>File name: {file.name ?? "No file selected"}</p>
-
+          <p className="mb-8">
+            <span className="font-bold">File name</span>:{" "}
+            {file.name ?? "No file selected"}
+          </p>
           <div>
             {isReady ? (
               <div className="flex items-center">
@@ -704,7 +723,7 @@ const Dashboard = () => {
                   position="top"
                   parentTitle={true}
                 >
-                  <FaPencilAlt
+                  <MdAddChart
                     title="Create Chart"
                     className="cursor-pointer hover:text-tertiary mb-3"
                     size={18}
