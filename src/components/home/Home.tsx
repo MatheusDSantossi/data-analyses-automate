@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./Home.css";
 import { Input, type InputChangeEvent } from "@progress/kendo-react-inputs";
 import CustomButton from "../../ui/CustomButton";
@@ -51,6 +51,30 @@ const Home = () => {
     navigate("/dashboard");
   };
 
+  // This component generates the shootings stars.
+  // It's memoized to prevent re-calculating random values on every render.
+  const ShootingStars = () => {
+    // Use memo will only re-run when its dependencies change. Here, it's an empty array, so it runs only once.
+    const stars = useMemo(() => {
+      // Create an array of 50 stars
+      return [...Array(50)].map((_, i) => {
+        // Generate random values for each star's style
+        const style = {
+          // Random top position (from -200px to 200px around the vertical center)
+          top: `calc(50% + ${Math.round(Math.random() * 400) - 200}px)`,
+          // Random left position (from -300px to 0px from the horizontal center)
+          left: `calc(50% - ${Math.round(Math.random() * 300)}px)`,
+          // Random animation delay to make stars appear at different times
+          animationDelay: `${Math.random() * 10000}ms`,
+        };
+        // Return a div for each star with its unique key and style
+        return <div key={i} className="shooting_star" style={style} />;
+      });
+    }, []);
+
+    return <div className="night">{stars}</div>;
+  };
+
   useEffect(() => {
     // Force re-rendering of the Reveal component to trigger the animation
     setKey((prevKey) => prevKey + 1);
@@ -58,6 +82,13 @@ const Home = () => {
 
   return (
     <div>
+      {/* Shooting stars container */}
+      {selectedFileName && (
+        <div className="stars-container">
+          <ShootingStars />
+        </div>
+      )}
+
       <Reveal className="w-full">
         <div className="relative mt-10 left-32" key={key}>
           <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
@@ -66,11 +97,11 @@ const Home = () => {
           <header className="flex flex-col items-start mb-26">
             <h1 className="font-medium text-2xl">
               Welcome to our{" "}
-              <span className="highlight c3">
+              <span className="highlight c3 transition-all duration-300">
                 Automate Data Analyse Wizard Tool
               </span>
             </h1>
-            <h4 className="text-md">Select the file to start the magic</h4>
+            <h4 className="text-md">Select a file to start the magic 🪄</h4>
             {/* Add some magic here (stars or something) */}
           </header>
           <section className="flex flex-col gap-3">
@@ -100,12 +131,11 @@ const Home = () => {
                 You need to select a file
               </Error>
             )}
-            
-              <CustomButton
-                onClick={goToDashboard}
-                isDisabled={!selectedFileName}
-              />
-            
+
+            <CustomButton
+              onClick={goToDashboard}
+              isDisabled={!selectedFileName}
+            />
           </section>
         </main>
       </Reveal>
