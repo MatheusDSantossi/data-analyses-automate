@@ -11,7 +11,7 @@ interface ProgressBarCompProps {
   max?: number;
 }
 
-const ProgressBarComp = ({ label, value, min, max }: ProgressBarCompProps) => {
+const ProgressBarComp = ({ label, value }: ProgressBarCompProps) => {
   return (
     <div>
       <ProgressBar label={label} value={value} />

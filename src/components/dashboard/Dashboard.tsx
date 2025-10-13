@@ -6,7 +6,7 @@ import BarChart from "./charts/BarChart";
 import LineChart from "./charts/LineChart";
 import DonutChart from "./charts/DonutChart";
 import { MdAddChart } from "react-icons/md";
-import ProgressBarComp from "../../ui/ProgressBarComp";
+// import ProgressBarComp from "../../ui/ProgressBarComp";
 import { Skeleton } from "@progress/kendo-react-indicators";
 import "@progress/kendo-theme-default/dist/all.css";
 import { Reveal } from "@progress/kendo-react-animation";
@@ -351,7 +351,7 @@ const Dashboard = () => {
         setAiBusy(false);
       }
     },
-    [generatedCharts, parsedData, aiRecommendations]
+    [generatedCharts, parsedData, aiRecommendations, aiPreviousRecommendations]
   );
 
   useEffect(() => {
@@ -716,7 +716,7 @@ const Dashboard = () => {
             {file.name ?? "No file selected"}
           </p>
           <div>
-            {isReady ? (
+            {(isReady && !aiBusy) ? (
               <div className="flex items-center">
                 <Tooltip
                   anchorElement="target"

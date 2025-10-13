@@ -1,6 +1,7 @@
 export function normalizeKey(s: string) {
   return String(s ?? "")
     .toLowerCase()
+    // eslint-disable-next-line no-useless-escape
     .replace(/[_\s\-]+/g, "") // remove unders, spaces, dashes
     .replace(/[^\w]/g, ""); // remove any other non-words chars
 }

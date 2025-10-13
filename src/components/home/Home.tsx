@@ -9,7 +9,7 @@ import { Reveal } from "@progress/kendo-react-animation";
 
 const Home = () => {
   const navigate = useNavigate();
-  const { setFile, setParsedData } = useFile();
+  const { setFile } = useFile();
 
   // State
   const [selectedFileName, setSelectedFileName] = useState<
@@ -28,7 +28,7 @@ const Home = () => {
     const files = event.target.element?.files;
 
     if (files && files.length > 0) {
-      const file = files[0];
+      const file: File = files[0];
       console.log(file.type);
 
       // if (allowedFileTypes.includes(file.type)) {

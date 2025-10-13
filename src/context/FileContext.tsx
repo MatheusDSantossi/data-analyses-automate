@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState } from "react";
 
 type FileContextType = {
-  file?: File;
-  setFile?: (file?: File) => void;
+  file?: File | undefined;
+  setFile: (file?: File | undefined) => void;
   parsedData?: any;
   setParsedData: (data?: any) => void;
 };
@@ -22,6 +22,7 @@ export const FileProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useFile = (): FileContextType => {
   const ctx = useContext(FileContext);
   if (!ctx) {

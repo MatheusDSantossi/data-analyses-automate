@@ -13,6 +13,7 @@ export function toNumber(value: any): number {
   const text = String(value).trim();
 
   // Remove currency symbols and spaces
+  // eslint-disable-next-line no-useless-escape
   const cleaned = text.replace(/[^\d.,\-]/g, "");
 
   // Heuristics:

@@ -61,7 +61,7 @@ const Wizard = ({ data, file }: { data: Record<string, any>[]; file: any }) => {
     }
 
     // aggregate by a sensible grouping: prefer Categoria if exists, otherwise use first categorical column
-    const groupField = rows[0].hasOwnProperty("Categoria")
+    const groupField = Object.prototype.hasOwnProperty.call(rows[0], "Categoria")
       ? "Categoria"
       : (Object.keys(rows[0]).find(
           (k) =>

@@ -1,7 +1,4 @@
-// wizard-ai-helper.ts (or include inside the Wizard component file)
-import { useEffect, useMemo, useState } from "react";
 import { getResponseForGivenPrompt } from "./GeminiFunctions";
-import { aggregateRowsToWizardData } from "./transformForWizard";
 import { toNumber } from "./toNumber";
 
 // robust JSON extractor
@@ -71,7 +68,7 @@ export async function suggestAggregationMetric(
   if (sampleRows.length === 0)
     return { metric: null, aggregation: "sum", reason: "No data available" };
 
-  const columnSummary = buildColumnSummary(sampleRows, sampleLimit);
+  const columnSummary: any = buildColumnSummary(sampleRows, sampleLimit);
 
   const prompt = `
 You are given a summary of dataset columns (name, whether likely numeric, sample values). RETURN JSON ONLY.
@@ -104,12 +101,12 @@ ${JSON.stringify(columnSummary)}
   const reason = parsed.reason ?? "";
 
   // Extra validation: ensure metric exists and is likely numeric (fallbacks)
-  const colNames = columnSummary.map((c) => c.name);
+  const colNames = columnSummary.map((c: any) => c.name);
   if (metric && !colNames.includes(metric)) {
     // try fuzzy match (simple, case-insensitive & underscore/space tolerant)
     const lower = (s: string) => s.toLowerCase().replace(/\s|_/g, "");
     const targetKey = lower(metric);
-    const fuzzy = columnSummary.find((c) => lower(c.name) === targetKey);
+    const fuzzy = columnSummary.find((c: any) => lower(c.name) === targetKey);
     if (fuzzy) {
       return {
         metric: fuzzy.name,
@@ -128,7 +125,7 @@ ${JSON.stringify(columnSummary)}
   // If metric not provided, fallback to pick a numeric column automatically
   if (!metric) {
     const auto = columnSummary.find(
-      (c) =>
+      (c: any) =>
         c.likelyNumeric &&
         /valor|value|total|price|amount|sales|cost/i.test(c.name)
     );
@@ -138,7 +135,7 @@ ${JSON.stringify(columnSummary)}
         aggregation: "sum",
         reason: "Fallback: auto-picked likely sales/amount column",
       };
-    const anyNumeric = columnSummary.find((c) => c.likelyNumeric);
+    const anyNumeric = columnSummary.find((c: any) => c.likelyNumeric);
     if (anyNumeric)
       return {
         metric: anyNumeric.name,

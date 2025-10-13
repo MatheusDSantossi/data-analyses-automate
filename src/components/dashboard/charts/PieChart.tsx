@@ -59,7 +59,7 @@ const PieChart = ({
 
   const renderTooltip = (context: any) => {
     // TODO: I need to transform the value in percentage
-    const { dataItem, series, value } = context.point || context;
+    const { dataItem, value } = context.point || context;
     console.log("dataItem pie: ", dataItem);
     return (
       <div>

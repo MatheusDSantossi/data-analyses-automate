@@ -8,7 +8,6 @@ import {
   ChartValueAxis,
   ChartValueAxisItem,
   ChartLegend,
-  type LegendLabels,
 } from "@progress/kendo-react-charts";
 
 type SeriesItem = { name: string; data: number[] };

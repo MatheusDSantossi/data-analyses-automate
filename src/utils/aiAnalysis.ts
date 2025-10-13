@@ -182,11 +182,7 @@ export function buildColumnSummary(
 }
 
 // Build a strict JSON-only prompt. Ask model to return EXACT JSON with no extra narration.
-export function buildAIPrompt(
-  columnSummary: any,
-  sampleSize = 50,
-  dateCols: string[] = []
-) {
+export function buildAIPrompt(columnSummary: any, dateCols: string[] = []) {
   // const sampleRows = parsedData.slice(0, Math.min(200, parsedData.length));
   // const dateColumns = detectDateColumns(sampleRows, sampleSize);
 
@@ -376,7 +372,7 @@ export async function analyzeDataWithAI(
   // const columnSummary = buildColumnSummary(sampleRows, sampleLimit);
   const prompt = buildAIPrompt(
     options.columnSummary,
-    sampleRows.length,
+    // sampleRows.length,
     dateCols
   );
 

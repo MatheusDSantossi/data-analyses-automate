@@ -24,6 +24,8 @@ function parseDateFlexible(value: any): Date | null {
     if (!isNaN(d.getTime())) return d;
   }
   // DD/MM/YYYY or D/M/YYYY
+  // Common slash/dash formats: dd/mm/yyyy or mm/dd/yyyy
+  // eslint-disable-next-line no-useless-escape
   const dm = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/.exec(s);
   if (dm) {
     const day = Number(dm[1]);
@@ -101,7 +103,7 @@ export function aggregateByTimeSeries(
     groupByField = "Categoria",
     granularity = "month-year",
     topN = null,
-    fillMissing = true,
+    // fillMissing = true,
     localeMonthLabels = "en-US",
   } = opts;
 

@@ -26,6 +26,7 @@ export function detectDateColumns(
     }
 
     // Common slash/dash formats: dd/mm/yyyy or mm/dd/yyyy
+    // eslint-disable-next-line no-useless-escape
     const dm = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
     if (dm) {
       const a = parseInt(dm[1], 10);

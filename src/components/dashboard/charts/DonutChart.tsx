@@ -3,10 +3,6 @@ import {
   ChartTitle,
   ChartSeries,
   ChartSeriesItem,
-  ChartCategoryAxis,
-  ChartCategoryAxisItem,
-  ChartValueAxis,
-  ChartValueAxisItem,
   ChartLegend,
   ChartSeriesLabels,
   ChartTooltip,
@@ -29,8 +25,6 @@ const DonutChart = ({
   categoryField = "Categoria",
   valueField = "Valor_Venda",
   mainTitle = "Time Series",
-  axisTitle = "",
-  valueAxisTitle = "",
 }: DonutChartProps) => {
   const chartMaterialV4Colors: string[] = [
     "#3f51b5", // Indigo
@@ -68,7 +62,7 @@ const DonutChart = ({
 
   const renderTooltip = (context: any) => {
     // TODO: I need to check the value to see if the percentage is correct and get an item automatically
-    const { dataItem, series, value } = context.point || context;
+    const { dataItem, value } = context.point || context;
     console.log("dataItem: ", dataItem);
     return (
       <div>

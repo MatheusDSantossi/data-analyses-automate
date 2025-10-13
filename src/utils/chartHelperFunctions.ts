@@ -9,19 +9,22 @@ export function mapRecToGeneratedChart(
   rec: any,
   idx: number,
   parsedData: Record<string, any>[],
-  dateCols: string [] = []
+  dateCols: string[] = []
 ): GeneratedChart {
   const id = rec.id ?? `ai-${idx}-${rec.chartType}-${rec.groupBy ?? "nogroup"}`;
   const kind = rec.chartType as ChartKind;
   const title = rec.explain || `${rec.chartType} of ${rec.metric ?? "value"}`;
 
   const groupExists =
-    !!rec.groupBy && parsedData[0] && parsedData[0].hasOwnProperty(rec.groupBy);
+    !!rec.groupBy &&
+    parsedData[0] &&
+    Object.prototype.hasOwnProperty.call(parsedData[0], rec.groupBy);
   const metricExists =
-    !!rec.metric && parsedData[0] && parsedData[0].hasOwnProperty(rec.metric);
+    !!rec.metric &&
+    parsedData[0] &&
+    Object.prototype.hasOwnProperty.call(parsedData[0], rec.metric);
 
   console.log("rec inside chart helper: ", rec);
-
 
   //   BAR / PIE / DONUT
   if (kind === "bar" || kind === "pie" || kind === "donut") {
@@ -73,7 +76,7 @@ export function mapRecToGeneratedChart(
 
     if (
       !dateField ||
-      !parsedData[0].hasOwnProperty(dateField) ||
+      !Object.prototype.hasOwnProperty.call(parsedData[0], dateField) ||
       !metricExists
     ) {
       return {

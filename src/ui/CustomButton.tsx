@@ -7,7 +7,7 @@ type CustomButtonProps = {
   children?: React.ReactNode;
 };
 
-const CustomButton = ({ onClick, children, isDisabled }: CustomButtonProps) => {
+const CustomButton = ({ onClick, isDisabled }: CustomButtonProps) => {
   return (
     <div
       className={`${isDisabled ? "pointer-events-none" : ""} flex items-center justify-center`}
