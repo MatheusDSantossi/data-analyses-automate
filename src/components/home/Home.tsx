@@ -91,7 +91,8 @@ const Home = () => {
 
       <Reveal className="w-full">
         <div className="relative mt-10 left-32" key={key}>
-          <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
+          <img className="h-10" src="/logo.png" alt="System Logo" />
+          {/* <img className="h-10" src="/src/assets/logo.png" alt="System Logo" /> */}
         </div>
         <main className="flex flex-col justify-center items-center h-screen">
           <header className="flex flex-col items-start mb-26">
