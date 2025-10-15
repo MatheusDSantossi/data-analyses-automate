@@ -63,7 +63,7 @@ const DonutChart = ({
   const renderTooltip = (context: any) => {
     // TODO: I need to check the value to see if the percentage is correct and get an item automatically
     const { dataItem, value } = context.point || context;
-    console.log("dataItem: ", dataItem);
+    // console.log("dataItem: ", dataItem);
     return (
       <div>
         {Object.values(dataItem)[0] as ReactNode}:{" "}

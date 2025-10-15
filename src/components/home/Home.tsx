@@ -57,7 +57,7 @@ const Home = () => {
     // Use memo will only re-run when its dependencies change. Here, it's an empty array, so it runs only once.
     const stars = useMemo(() => {
       // Create an array of 50 stars
-      return [...Array(50)].map((_, i) => {
+      return [...Array(20)].map((_, i) => {
         // Generate random values for each star's style
         const style = {
           // Random top position (from -200px to 200px around the vertical center)

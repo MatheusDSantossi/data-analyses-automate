@@ -66,6 +66,7 @@ const Dashboard = () => {
   >(null);
   const [aiCards, setAiCards] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [limitReached, setLimitReached] = useState<Record<string, boolean>>({});
   const [aiRecommendations, setAiRecommendations] = useState<any | null>(null);
   const [aiPreviousRecommendations, setAiPreviousRecommendations] = useState<
     any | null
@@ -246,7 +247,14 @@ const Dashboard = () => {
       const attempts = (current.regenerationAttempts ?? 0) + 1;
       if (attempts > 5) {
         // TODO: show toast / warning
-        console.warn("Regeneration limit reached for", chartId);
+        const warningText = "Regeneration limit reached for " + chartId;
+
+        alert(warningText);
+        setLimitReached((prevState) => ({
+          ...prevState,
+          [chartId]: true,
+        }));
+        console.warn(warningText);
         return;
       }
 
@@ -262,6 +270,7 @@ const Dashboard = () => {
         );
 
         console.log("aiRecommendations: ", aiRecommendations);
+        console.log("aiPreviousRecommendations: ", aiPreviousRecommendations);
 
         // call your reAnalyze function — it returns the new recs
         const recs = await reAnalyzeDataWithAI(
@@ -364,6 +373,8 @@ const Dashboard = () => {
 
   const ChartRenderer: React.FC<{ chart: GeneratedChart }> = ({ chart }) => {
     console.log("chart valid: ", chart);
+    console.log("limitReached[chart.id]: ", limitReached[chart.id]);
+    console.log("limitReached: ", limitReached);
     if (!chart.valid && chart.kind !== "line") {
       return (
         <div className="bg-white shadow-md rounded-lg p-4 min-h-[300px]">
@@ -382,16 +393,20 @@ const Dashboard = () => {
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
-                  disabled={chart.regenerating}
+                  disabled={chart.regenerating || limitReached[chart.id]}
                   className="flex justify-start p-2"
                   onClick={() => {
                     handleRegenerate(chart.id);
                   }}
                 >
                   <GrUpdate
-                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    className={`${chart.regenerating || limitReached[chart.id] ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
                     title={
-                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                      chart.regenerating
+                        ? "Regenerating..."
+                        : limitReached[chart.id]
+                          ? "Regenerate max attempts reached"
+                          : "Regenerate"
                     }
                     size={18}
                   />
@@ -419,16 +434,20 @@ const Dashboard = () => {
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
-                  disabled={chart.regenerating}
+                  disabled={chart.regenerating || limitReached[chart.id]}
                   className="flex justify-start p-2"
                   onClick={() => {
                     handleRegenerate(chart.id);
                   }}
                 >
                   <GrUpdate
-                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    className={`${chart.regenerating || limitReached[chart.id] ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
                     title={
-                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                      chart.regenerating
+                        ? "Regenerating..."
+                        : limitReached[chart.id]
+                          ? "Regenerate max attempts reached"
+                          : "Regenerate"
                     }
                     size={18}
                   />
@@ -452,16 +471,20 @@ const Dashboard = () => {
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
-                  disabled={chart.regenerating}
+                  disabled={chart.regenerating || limitReached[chart.id]}
                   className="flex justify-start p-2"
                   onClick={() => {
                     handleRegenerate(chart.id);
                   }}
                 >
                   <GrUpdate
-                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    className={`${chart.regenerating || limitReached[chart.id] ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
                     title={
-                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                      chart.regenerating
+                        ? "Regenerating..."
+                        : limitReached[chart.id]
+                          ? "Regenerate max attempts reached"
+                          : "Regenerate"
                     }
                     size={18}
                   />
@@ -485,16 +508,20 @@ const Dashboard = () => {
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
-                  disabled={chart.regenerating}
+                  disabled={chart.regenerating || limitReached[chart.id]}
                   className="flex justify-start p-2"
                   onClick={() => {
                     handleRegenerate(chart.id);
                   }}
                 >
                   <GrUpdate
-                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    className={`${chart.regenerating || limitReached[chart.id] ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
                     title={
-                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                      chart.regenerating
+                        ? "Regenerating..."
+                        : limitReached[chart.id]
+                          ? "Regenerate max attempts reached"
+                          : "Regenerate"
                     }
                     size={18}
                   />
@@ -519,16 +546,20 @@ const Dashboard = () => {
             <div>
               <Tooltip anchorElement="target" position="top" parentTitle={true}>
                 <button
-                  disabled={chart.regenerating}
+                  disabled={chart.regenerating || limitReached[chart.id]}
                   className="flex justify-start p-2"
                   onClick={() => {
                     handleRegenerate(chart.id);
                   }}
                 >
                   <GrUpdate
-                    className={`${chart.regenerating ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
+                    className={`${chart.regenerating || limitReached[chart.id] ? "text-primary/10" : "text-primary hover:text-tertiary cursor-pointer"}`}
                     title={
-                      chart.regenerating ? "Regenerating..." : "Regenerate"
+                      chart.regenerating
+                        ? "Regenerating..."
+                        : limitReached[chart.id]
+                          ? "Regenerate max attempts reached"
+                          : "Regenerate"
                     }
                     size={18}
                   />
@@ -696,11 +727,7 @@ const Dashboard = () => {
       <Reveal className="w-full">
         <div className="" key={key}>
           <div className="flex flex-row justify-between">
-            <img
-              className="h-10"
-              src="/logo.png"
-              alt="System Logo"
-            />
+            <img className="h-10" src="/logo.png" alt="System Logo" />
             <div className="flex relative left-0">
               <CloseButton
                 buttonContent="Close"
@@ -716,7 +743,7 @@ const Dashboard = () => {
             {file.name ?? "No file selected"}
           </p>
           <div>
-            {(isReady && !aiBusy) ? (
+            {isReady && !aiBusy ? (
               <div className="flex items-center">
                 <Tooltip
                   anchorElement="target"

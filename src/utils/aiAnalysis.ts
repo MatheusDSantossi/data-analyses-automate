@@ -272,71 +272,25 @@ export function buildAIRegeneratePrompt({
 
   console.log("dateCols: AI REGE: ", dateCols);
 
+  // Short & strict: model MUST not repeat; MUST return novel combos; MUST include 'score'
   const prompt = `
-      You are given:
-      1) The previous chart recommendation (JSON).
-      2) A compact column summary and the allowed column NAMES.
-      3) A list of forbidden "groupBy||metric" combinations the user already saw.
+    You are given the previous chart recommendation and the column metadata.
+    Return JSON ONLY (no extra text) with schema:
+    { "columns": [...], "recommendedCharts": [...], "recommendedCards": [...] }
 
-      **Task:** Return JSON ONLY. Suggest up to 3 *alternative* chart recommendations (same schema used earlier) that are **different** from the forbidden combinations. Prefer diversity: change the metric OR the groupBy OR the chartType. If you return a suggestion that matches a forbidden combo exactly, it will be discarded.
+    IMPORTANT RULES (enforce strictly):
+    1) Use only the supplied column NAMES.
+    2) Do NOT return *exact or near-duplicate* chart combinations that appear in the "forbidden" list below. Near-duplicate means same groupBy+metric OR same metric with only trivial changes.
+    3) MUST propose alternatives that differ in at least one of: chartType, groupBy, metric, aggregation, or granularity, but the chart type MUST be line, bar, pie, donut or area. Do not recommend a different chartType. Mark each suggestion's 'score' (0..1).
+    4) If you cannot propose any novel alternative, return an empty 'recommendedCharts' array.
+    5) If dateCols is empty, DO NOT return any 'line' or 'area' chart.
 
-      **Output JSON schema (exact):**
-      {
-        "columns": [ { "name": "...", "type": "numeric|categorical_or_string|date|unknown", ... } ],
-        "recommendedCharts": [
-          {
-            "chartType": "bar|line|pie|donut|area",
-            "groupBy": "<one of the provided column NAMES or null>",
-            "metric": "<one of the provided column NAMES or null>",
-            "aggregation": "sum|avg|count|none",
-            "granularity": "month-year|year|day|none",
-            "topN": <int|null>,
-            "score": <number between 0 and 1>, 
-            "explain": "<1-line rationale>"
-          }
-        ],
-        "recommendedCards": [ /* optional */ ]
-      }
+    Forbidden combos: ${JSON.stringify(forbiddenCombos)}
+    Available date columns: ${JSON.stringify(dateCols)}
+    Available columns: ${JSON.stringify(columnNames)}
 
-      RULES:
-      - Use ONLY the provided column NAMES in 'groupBy' and 'metric'.
-      - Do NOT invent new column names.
-      - Avoid exact matches to any of the forbidden combos (see list below).
-      - Prefer suggestions that differ from the original chart, and rank them with 'score' (0..1).
-      - If no valid alternatives exist, return an empty array for recommendedCharts.
-      - Return valid JSON only, nothing else.
-
-      Original chart:
-      ${JSON.stringify({
-        id: originalChart?.id,
-        kind: originalChart?.kind,
-        recommendation: originalChart?.recommendation,
-      })}
-
-      Available column NAMES:
-      ${JSON.stringify(columnNames)}
-
-      Forbidden groupBy||metric combos:
-      ${JSON.stringify(forbiddenCombos)}
-
-      Column summary:
-      ${JSON.stringify(columnSummary)}
-
-      Available date column NAMES (if any): ${JSON.stringify(dateCols)}
-
-      RULES:
-    - Output only valid JSON that strictly conforms to the schema above.
-    - Provide up to 4 recommended chart objects, ordered by importance.
-    - For numeric metrics prefer "sum" for totals (sales) and "avg" if data looks like rates.
-    - For time-series use granularity "month-year" by default when dates are present.
-    - If you cannot decide, use null values where appropriate.
-    - Only recommend line/area (time-series) charts if one or more of the date columns above exists.
-    - If no date columns exist, DO NOT return any chart with "chartType": "line" or "area".
-
-    Diversity rule: Prefer a diverse set of chart types. Return at least one chart that is NOT "bar" or "line" when the data supports it (for example: pie/donut for single metric by category, area for time series if dates exist). Provide a 'score' for each suggested chart so the frontend can prefer high-quality suggestions.
-
-      Return only JSON, nothing else.
-      `;
+    Return only JSON (with 'score' and 'explain' for each suggested chart).
+    `;
 
   if (regenerationAttempts > 5) return null;
 
