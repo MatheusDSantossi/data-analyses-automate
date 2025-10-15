@@ -698,7 +698,7 @@ const Dashboard = () => {
           <div className="flex flex-row justify-between">
             <img
               className="h-10"
-              src="/src/assets/logo.png"
+              src="/logo.png"
               alt="System Logo"
             />
             <div className="flex relative left-0">
