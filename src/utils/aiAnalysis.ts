@@ -6,7 +6,7 @@ import { fuzzyMatchColumn } from "./fields";
 import { detectDateColumns } from "./detectDateCols";
 
 interface RegenerationState {
-  originalChart: GeneratedChart;
+  originalChart?: GeneratedChart;
   aiPreviousRecommendations: any;
   columnSummary: any;
   regenerationAttempts: number;
@@ -244,7 +244,7 @@ export function buildAIPrompt(columnSummary: any, dateCols: string[] = []) {
 }
 
 export function buildAIRegeneratePrompt({
-  originalChart,
+  // originalChart,
   aiPreviousRecommendations,
   columnSummary,
   regenerationAttempts,
@@ -365,7 +365,7 @@ export async function reAnalyzeDataWithAI(
 
   const columnSummary = buildColumnSummary(sampleRows, sampleLimit);
   const prompt = buildAIRegeneratePrompt({
-    originalChart,
+    // originalChart,
     aiPreviousRecommendations,
     columnSummary,
     regenerationAttempts,
