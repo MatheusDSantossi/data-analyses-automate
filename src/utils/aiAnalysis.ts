@@ -350,7 +350,7 @@ export async function analyzeDataWithAI(
 }
 
 export async function reAnalyzeDataWithAI(
-  originalChart: GeneratedChart,
+  // originalChart: GeneratedChart,
   aiPreviousRecommendations: any,
   regenerationAttempts: number,
   rows: Record<string, any>[],

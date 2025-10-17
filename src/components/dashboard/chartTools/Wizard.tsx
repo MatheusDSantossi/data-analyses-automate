@@ -61,7 +61,10 @@ const Wizard = ({ data, file }: { data: Record<string, any>[]; file: any }) => {
     }
 
     // aggregate by a sensible grouping: prefer Categoria if exists, otherwise use first categorical column
-    const groupField = Object.prototype.hasOwnProperty.call(rows[0], "Categoria")
+    const groupField = Object.prototype.hasOwnProperty.call(
+      rows[0],
+      "Categoria"
+    )
       ? "Categoria"
       : (Object.keys(rows[0]).find(
           (k) =>
@@ -78,7 +81,7 @@ const Wizard = ({ data, file }: { data: Record<string, any>[]; file: any }) => {
   }, [rows, aiSuggestion]);
 
   return (
-    <div className="mt-10">
+    <div className="mt-10 overflow-y-hidden">
       <img className="h-10" src="/src/assets/logo.png" alt="System Logo" />
       <h2 className="text-2xl font-bold mb-8">Wizard</h2>
       <p>File: {file?.name ?? "No file selected"}</p>

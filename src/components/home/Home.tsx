@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import "./Home.css";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Input, type InputChangeEvent } from "@progress/kendo-react-inputs";
 import CustomButton from "../../ui/CustomButton";
 import { useNavigate } from "react-router-dom";
@@ -94,7 +94,7 @@ const Home = () => {
           <img className="h-10" src="/logo.png" alt="System Logo" />
           {/* <img className="h-10" src="/src/assets/logo.png" alt="System Logo" /> */}
         </div>
-        <main className="flex flex-col justify-center items-center h-screen">
+        <main className="flex flex-col justify-center items-center h-[80vh]">
           <header className="flex flex-col items-start mb-26">
             <h1 className="font-medium text-2xl">
               Welcome to our{" "}
@@ -144,4 +144,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default memo(Home);
