@@ -1,5 +1,4 @@
 import { Button } from "@progress/kendo-react-buttons";
-import { Tooltip } from "@progress/kendo-react-tooltip";
 
 type CustomButtonProps = {
   onClick?: () => void;

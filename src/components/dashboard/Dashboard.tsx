@@ -274,7 +274,7 @@ const Dashboard = () => {
 
         // call your reAnalyze function — it returns the new recs
         const recs = await reAnalyzeDataWithAI(
-          current,
+          // current,
           aiPreviousRecommendations,
           attempts,
           parsedData,
