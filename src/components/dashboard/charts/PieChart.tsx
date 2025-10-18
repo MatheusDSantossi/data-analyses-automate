@@ -39,7 +39,7 @@ const PieChart = ({
     "#673ab7", // Deep Purple
   ];
 
-  console.log("seriesData: ", seriesData);
+  // console.log("seriesData: ", seriesData);
   // console.log("categories: ", categories);
 
   // The label content prop expects a function that returns the text for each slice.
@@ -54,13 +54,13 @@ const PieChart = ({
     0
   );
 
-  console.log("valuesList: ", valuesList);
-  console.log("sum: ", sum);
+  // console.log("valuesList: ", valuesList);
+  // console.log("sum: ", sum);
 
   const renderTooltip = (context: any) => {
     // TODO: I need to transform the value in percentage
     const { dataItem, value } = context.point || context;
-    console.log("dataItem pie: ", dataItem);
+    // console.log("dataItem pie: ", dataItem);
     return (
       <div>
         {Object.values(dataItem)[0] as ReactNode}:{" "}
@@ -70,7 +70,7 @@ const PieChart = ({
     );
   };
 
-  console.log("labelContent: ", labelContent);
+  // console.log("labelContent: ", labelContent);
 
   return (
     <div style={{ height: "fit-content", width: 640 }}>

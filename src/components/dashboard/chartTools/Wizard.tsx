@@ -9,7 +9,10 @@ import { useNavigate } from "react-router-dom";
 const Wizard = ({ data, file }: { data: Record<string, any>[]; file: any }) => {
   const navigate = useNavigate();
   const { parsedData } = useFile(); // or use data param
-  const rows = data ?? parsedData ?? [];
+  // const rows = data ?? parsedData ?? [];
+  const rows = useMemo(() => {
+    return data ?? parsedData ?? [];
+  }, [data, parsedData]);
 
   const [aiPicking, setAiPicking] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<{

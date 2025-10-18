@@ -67,7 +67,7 @@ const Dashboard = () => {
   const [aiCards, setAiCards] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [limitReached, setLimitReached] = useState<Record<string, boolean>>({});
-  const [aiRecommendations, setAiRecommendations] = useState<any | null>(null);
+  // const [aiRecommendations, setAiRecommendations] = useState<any | null>(null);
   const [aiPreviousRecommendations, setAiPreviousRecommendations] = useState<
     any | null
   >(null);
@@ -129,11 +129,9 @@ const Dashboard = () => {
         } else {
           // xslx/xlsx... -> we're using SheetJS
           const workbook = new ExcelJS.Workbook();
-          console.log("arrayBuffer: ", arrayBuffer);
 
           await workbook.xlsx.load(arrayBuffer); // it returns a load promise
 
-          console.log("workbook: ", workbook);
           if (!workbook.worksheets || workbook.worksheets.length === 0) {
             navigate("/");
             throw new Error("No worksheets found in workbook");
@@ -141,7 +139,6 @@ const Dashboard = () => {
 
           const sheet = workbook.worksheets[0];
 
-          console.log("sheet: ", sheet);
           // Read header from first row
           const headerRow: any = sheet.getRow(1);
 
@@ -167,8 +164,6 @@ const Dashboard = () => {
             result.push(obj);
           });
 
-          console.log("result: ", result);
-
           setParsedData(result);
         }
       } catch (err) {
@@ -192,10 +187,7 @@ const Dashboard = () => {
       // build column summary + detect dates BEFORE calling AI (so prompt can includes them)
       const columnSummary = buildColumnSummary(sampleRows, sampleRows.length);
 
-      console.log("sampleRows: ", sampleRows);
       const dateCols = detectDateColumns(sampleRows);
-
-      console.log("dateCols AI ALL: ", dateCols);
 
       const recs = await analyzeDataWithAI(
         parsedData,
@@ -203,7 +195,7 @@ const Dashboard = () => {
         dateCols
       );
 
-      setAiRecommendations(recs);
+      // setAiRecommendations(recs);
       setAiPreviousRecommendations(recs);
       if (recs.cardPayloads) setAiCards(recs.cardPayloads);
 
@@ -269,8 +261,8 @@ const Dashboard = () => {
           )
         );
 
-        console.log("aiRecommendations: ", aiRecommendations);
-        console.log("aiPreviousRecommendations: ", aiPreviousRecommendations);
+        // console.log("aiRecommendations: ", aiRecommendations);
+        // console.log("aiPreviousRecommendations: ", aiPreviousRecommendations);
 
         // call your reAnalyze function — it returns the new recs
         const recs = await reAnalyzeDataWithAI(
@@ -300,7 +292,7 @@ const Dashboard = () => {
 
         // update cards if AI returned new card payloads
         // if (recs.cardPayloads) setAiCards(recs.cardPayloads);
-        setAiRecommendations(recs);
+        // setAiRecommendations(recs);
 
         // decide replacement strategy: use first recommendedChart to replace this chart
         const firstRec = recs.recommendedCharts?.[0];
@@ -360,7 +352,7 @@ const Dashboard = () => {
         setAiBusy(false);
       }
     },
-    [generatedCharts, parsedData, aiRecommendations, aiPreviousRecommendations]
+    [generatedCharts, parsedData, aiPreviousRecommendations]
   );
 
   useEffect(() => {
@@ -372,9 +364,6 @@ const Dashboard = () => {
   }, [parsedData, analyzeAll]);
 
   const ChartRenderer: React.FC<{ chart: GeneratedChart }> = ({ chart }) => {
-    console.log("chart valid: ", chart);
-    console.log("limitReached[chart.id]: ", limitReached[chart.id]);
-    console.log("limitReached: ", limitReached);
     if (!chart.valid && chart.kind !== "line") {
       return (
         <div className="bg-white shadow-md rounded-lg p-4 min-h-[300px]">

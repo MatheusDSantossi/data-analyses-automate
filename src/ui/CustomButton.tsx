@@ -14,7 +14,7 @@ const CustomButton = ({ onClick, isDisabled }: CustomButtonProps) => {
       <div style={{ transform: "none" }}>
         <Button
           onClick={onClick}
-          className={`relative inline-block p-px font-semibold! leading-6! text-white! no-underline ${isDisabled ? "opacity-70! bg-secondary-dark/10!" : "bg-secondary-dark!"} shadow-2xl cursor-pointer group rounded-xl shadow-zinc-900`}
+          className={`relative inline-block p-px font-semibold! leading-6! text-white! no-underline ${isDisabled ? "opacity-70! bg-secondary-dark/10!" : "bg-secondary-dark!"} shadow-2xl cursor-pointer group rounded-xl shadow-zinc-900 items-center justify-center`}
           disabled={isDisabled}
         >
           <span className="absolute inset-0 overflow-hidden rounded-xl">

@@ -186,7 +186,6 @@ export function buildAIPrompt(columnSummary: any, dateCols: string[] = []) {
   // const sampleRows = parsedData.slice(0, Math.min(200, parsedData.length));
   // const dateColumns = detectDateColumns(sampleRows, sampleSize);
 
-  console.log("Detected date columns BUILD AI: ", dateCols);
 
   const prompt = `
     You are given a compact summary of a dataset (column names with type hints and small sample values). DO NOT add any text outside the JSON. Return strictly a JSON object that follows this exact schema:
@@ -259,18 +258,17 @@ export function buildAIRegeneratePrompt({
       : [];
 
   // Building a list of forbidden combos: "groupBy || metric"
-  const forbiddenCombos = (
-    aiPreviousRecommendations?.recommendedCharts || []
-  ).map((rc: any) => {
-    const g = rc.groupBy || "";
-    const m = rc.metric || "";
-    return `${g}||${m}`;
-  });
+  // const forbiddenCombos = (
+  //   aiPreviousRecommendations?.recommendedCharts || []
+  // ).map((rc: any) => {
+  //   const g = rc.groupBy || "";
+  //   const m = rc.metric || "";
+  //   return `${g}||${m}`;
+  // });
 
   // const sampleRows = rows.slice(0, Math.min(200, rows.length));
   // const dateColumns = detectDateColumns(sampleRows);
 
-  console.log("dateCols: AI REGE: ", dateCols);
 
   // Short & strict: model MUST not repeat; MUST return novel combos; MUST include 'score'
   const prompt = `
@@ -284,8 +282,11 @@ export function buildAIRegeneratePrompt({
     3) MUST propose alternatives that differ in at least one of: chartType, groupBy, metric, aggregation, or granularity, but the chart type MUST be line, bar, pie, donut or area. Do not recommend a different chartType. Mark each suggestion's 'score' (0..1).
     4) If you cannot propose any novel alternative, return an empty 'recommendedCharts' array.
     5) If dateCols is empty, DO NOT return any 'line' or 'area' chart.
+    
+    I want you to completely avoid charts like these previous charts:
 
-    Forbidden combos: ${JSON.stringify(forbiddenCombos)}
+    Previous recommended charts: ${JSON.stringify(aiPreviousRecommendations?.recommendedCharts)}
+
     Available date columns: ${JSON.stringify(dateCols)}
     Available columns: ${JSON.stringify(columnNames)}
 
@@ -294,7 +295,7 @@ export function buildAIRegeneratePrompt({
 
   if (regenerationAttempts > 5) return null;
 
-  console.log("Regeneration prompt: ", prompt);
+  // console.log("Regeneration prompt: ", prompt);
 
   return prompt;
 }
@@ -373,6 +374,8 @@ export async function reAnalyzeDataWithAI(
   });
 
   if (!prompt) return null;
+
+  console.log("aiPRevious", aiPreviousRecommendations);
 
   const raw = await getResponseForGivenPrompt(prompt); // returns string
   const parsed = extractJson(raw); // your robust extractor

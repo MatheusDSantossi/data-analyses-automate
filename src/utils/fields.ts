@@ -18,8 +18,6 @@ export function fuzzyMatchColumn(
 
   if (Array.isArray(suggested)) suggestedCheck = suggested[0];
 
-  console.log("suggested: ", suggested);
-
   // 1) exact
   if (columns.includes(suggestedCheck)) return suggestedCheck;
 

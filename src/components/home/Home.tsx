@@ -29,13 +29,13 @@ const Home = () => {
 
     if (files && files.length > 0) {
       const file: File = files[0];
-      console.log(file.type);
+      // console.log(file.type);
 
       // if (allowedFileTypes.includes(file.type)) {
       setFile(file);
       setSelectedFileName(file.name);
       // parseFile(file).then(rows => setParsedData(rows))
-      console.log(files[0].name);
+      // console.log(files[0].name);
       // }
     } else {
       alert("You must select a file");
@@ -121,6 +121,7 @@ const Home = () => {
               focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent
               file:transition file:duration-300 file:ease-in-out"
               type="file"
+              accept=".xlsx, .csv"
               id="file_select"
               onChange={handleFileChange}
             />

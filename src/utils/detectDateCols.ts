@@ -93,8 +93,6 @@ export function detectDateColumns(
     }
     const ratio = nonEmpty === 0 ? 0 : dateCount / nonEmpty;
 
-    console.log("ratio: ", ratio);
-
     if (ratio >= threshold) dateCols.push(k);
   }
   return dateCols;

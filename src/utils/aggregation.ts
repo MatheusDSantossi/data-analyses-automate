@@ -170,8 +170,8 @@ export function aggregateByTimeSeries(
 
   // If fillMissing=false, you might prefer sparse arrays per series; we keep alignment by default.
 
-  console.log("rows: ", rows);
-  console.log("aggregate: ", opts);
+  // console.log("rows: ", rows);
+  // console.log("aggregate: ", opts);
 
   return { categories, series };
 }

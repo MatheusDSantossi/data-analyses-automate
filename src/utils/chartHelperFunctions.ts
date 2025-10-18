@@ -24,7 +24,7 @@ export function mapRecToGeneratedChart(
     parsedData[0] &&
     Object.prototype.hasOwnProperty.call(parsedData[0], rec.metric);
 
-  console.log("rec inside chart helper: ", rec);
+  // console.log("rec inside chart helper: ", rec);
 
   //   BAR / PIE / DONUT
   if (kind === "bar" || kind === "pie" || kind === "donut") {
@@ -52,7 +52,7 @@ export function mapRecToGeneratedChart(
       }
     );
 
-    console.log("wizardRows: ", wizardRows);
+    // console.log("wizardRows: ", wizardRows);
 
     return {
       id,

@@ -42,7 +42,7 @@ const DonutChart = ({
     "#673ab7", // Deep Purple
   ];
 
-  console.log("seriesData: ", seriesData);
+  // console.log("seriesData: ", seriesData);
   // console.log("categories: ", categories);
 
   // The label content prop expects a function that returns the text for each slice.
@@ -57,8 +57,8 @@ const DonutChart = ({
     0
   );
 
-  console.log("valuesList: ", valuesList);
-  console.log("sum: ", sum);
+  // console.log("valuesList: ", valuesList);
+  // console.log("sum: ", sum);
 
   const renderTooltip = (context: any) => {
     // TODO: I need to check the value to see if the percentage is correct and get an item automatically
